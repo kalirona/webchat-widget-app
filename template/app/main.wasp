@@ -1,0 +1,689 @@
+app OpenSaaS {
+  wasp: {
+    version: "^0.24.0"
+  },
+
+  title: "My Open SaaS App",
+
+  head: [
+    "<link rel='icon' href='/favicon.ico' />",
+
+    "<meta name='description' content='Your apps main description and features.' />",
+    "<meta name='author' content='Your (App) Name' />",
+    "<meta name='keywords' content='saas, solution, product, app, service' />",
+
+    "<meta property='og:type' content='website' />",
+    "<meta property='og:title' content='Your Open SaaS App' />",
+    "<meta property='og:site_name' content='Your Open SaaS App' />",
+    "<meta property='og:url' content='https://your-saas-app.com' />",
+    "<meta property='og:description' content='Your apps main description and features.' />",
+    "<meta property='og:image' content='https://your-saas-app.com/public-banner.webp' />",
+    "<meta name='twitter:image' content='https://your-saas-app.com/public-banner.webp' />",
+    "<meta name='twitter:image:width' content='800' />",
+    "<meta name='twitter:image:height' content='400' />",
+    "<meta name='twitter:card' content='summary_large_image' />",
+    // TODO: You can put your Plausible analytics scripts below (https://docs.opensaas.sh/guides/analytics/):
+    // NOTE: Plausible does not use Cookies, so you can simply add the scripts here.
+    // Google, on the other hand, does, so you must instead add the script dynamically
+    // via the Cookie Consent component after the user clicks the "Accept" cookies button.
+    "<script async data-domain='<your-site-id>' src='https://plausible.io/js/script.js'></script>",  // for production
+    "<script async data-domain='<your-site-id>' src='https://plausible.io/js/script.local.js'></script>",  // for development
+  ],
+
+  // 🔐 Auth out of the box! https://wasp.sh/docs/auth/overview
+  auth: {
+    userEntity: User,
+    methods: {
+      // NOTE: If you decide to not use email auth, make sure to also delete the related routes and pages below.
+      //   (RequestPasswordReset(Route|Page), PasswordReset(Route|Page), EmailVerification(Route|Page))
+      email: {
+        fromField: {
+          name: "Open SaaS App",
+          email: "me@example.com"
+        },
+        emailVerification: {
+          clientRoute: EmailVerificationRoute,
+          getEmailContentFn: import { getVerificationEmailContent } from "@src/auth/email-and-pass/emails",
+        },
+        passwordReset: {
+          clientRoute: PasswordResetRoute,
+          getEmailContentFn: import { getPasswordResetEmailContent } from "@src/auth/email-and-pass/emails",
+        },
+        userSignupFields: import { getEmailUserFields } from "@src/auth/userSignupFields",
+      },
+      // Uncomment to enable Google Auth (check https://wasp.sh/docs/auth/social-auth/google for setup instructions):
+      // google: { // Guide for setting up Auth via Google
+      //   userSignupFields: import { getGoogleUserFields } from "@src/auth/userSignupFields",
+      //   configFn: import { getGoogleAuthConfig } from "@src/auth/userSignupFields",
+      // },
+      // Uncomment to enable GitHub Auth (check https://wasp.sh/docs/auth/social-auth/github for setup instructions):
+      // gitHub: {
+      //   userSignupFields: import { getGitHubUserFields } from "@src/auth/userSignupFields",
+      //   configFn: import { getGitHubAuthConfig } from "@src/auth/userSignupFields",
+      // },
+      // Uncomment to enable Discord Auth (check https://wasp.sh/docs/auth/social-auth/discord for setup instructions):
+      // discord: {
+      //   userSignupFields: import { getDiscordUserFields } from "@src/auth/userSignupFields",
+      //   configFn: import { getDiscordAuthConfig } from "@src/auth/userSignupFields"
+      // }
+    },
+    onAuthFailedRedirectTo: "/login",
+    onAuthSucceededRedirectTo: "/app/dashboard",
+  },
+
+  db: {
+    // Run `wasp db seed` to seed the database with the seed functions below:
+    seeds: [
+      // Populates the database with a bunch of fake users to work with during development.
+      import { seedMockUsers } from "@src/server/scripts/dbSeeds",
+    ]
+  },
+
+  client: {
+    rootComponent: import { App } from "@src/client/App",
+  },
+
+  server: {
+    envValidationSchema: import { serverEnvValidationSchema } from "@src/env",
+  },
+
+  emailSender: {
+    // NOTE: "Dummy" provider is just for local development purposes.
+    //   Make sure to check the server logs for the email confirmation url (it will not be sent to an address)!
+    //   Once you are ready for production, switch to e.g. "SendGrid" or "Mailgun" providers. Check out https://docs.opensaas.sh/guides/email-sending/ .
+    provider: Dummy,
+    defaultFrom: {
+      name: "Open SaaS App",
+      // When using a real provider, e.g. SendGrid, you must use the same email address that you configured your account to send out emails with!
+      email: "me@example.com"
+    },
+  },
+}
+
+// Prerendering routes with static content creates HTML files at build time that are served immediately,
+// improving SEO, search engine/AI crawling, and performance: https://wasp.sh/docs/advanced/prerendering
+route LandingPageRoute { path: "/", to: LandingPage, prerender: true }
+page LandingPage {
+  component: import { LandingPage } from "@src/landing-page/LandingPage"
+}
+
+//#region Auth Pages
+route LoginRoute { path: "/login", to: LoginPage }
+page LoginPage {
+  component: import { Login } from "@src/auth/LoginPage"
+}
+
+route SignupRoute { path: "/signup", to: SignupPage }
+page SignupPage {
+  component: import { Signup } from "@src/auth/SignupPage"
+}
+
+route RequestPasswordResetRoute { path: "/request-password-reset", to: RequestPasswordResetPage }
+page RequestPasswordResetPage {
+  component: import { RequestPasswordResetPage } from "@src/auth/email-and-pass/RequestPasswordResetPage",
+}
+
+route PasswordResetRoute { path: "/password-reset", to: PasswordResetPage }
+page PasswordResetPage {
+  component: import { PasswordResetPage } from "@src/auth/email-and-pass/PasswordResetPage",
+}
+
+route EmailVerificationRoute { path: "/email-verification", to: EmailVerificationPage }
+page EmailVerificationPage {
+  component: import { EmailVerificationPage } from "@src/auth/email-and-pass/EmailVerificationPage",
+}
+//#endregion
+
+//#region User
+route AccountRoute { path: "/account", to: AccountPage }
+page AccountPage {
+  authRequired: true,
+  component: import { AccountPage } from "@src/user/AccountPage"
+}
+
+query getPaginatedUsers {
+  fn: import { getPaginatedUsers } from "@src/user/operations",
+  entities: [User]
+}
+
+action updateIsUserAdminById {
+  fn: import { updateIsUserAdminById } from "@src/user/operations",
+  entities: [User]
+}
+//#endregion
+
+//#region Demo AI App
+route DemoAppRoute { path: "/demo-app", to: DemoAppPage }
+page DemoAppPage {
+  authRequired: true,
+  component: import { DemoAppPage } from "@src/demo-ai-app/DemoAppPage"
+}
+
+action generateGptResponse {
+  fn: import { generateGptResponse } from "@src/demo-ai-app/operations",
+  entities: [User, Task, GptResponse]
+}
+
+action createTask {
+  fn: import { createTask } from "@src/demo-ai-app/operations",
+  entities: [Task]
+}
+
+action deleteTask {
+  fn: import { deleteTask } from "@src/demo-ai-app/operations",
+  entities: [Task]
+}
+
+action updateTask {
+  fn: import { updateTask } from "@src/demo-ai-app/operations",
+  entities: [Task]
+}
+
+query getGptResponses {
+  fn: import { getGptResponses } from "@src/demo-ai-app/operations",
+  entities: [User, GptResponse]
+}
+
+query getAllTasksByUser {
+  fn: import { getAllTasksByUser } from "@src/demo-ai-app/operations",
+  entities: [Task]
+}
+//#endregion
+
+//#region Payment
+route PricingPageRoute { path: "/pricing", to: PricingPage, prerender: true }
+page PricingPage {
+  component: import { PricingPage } from "@src/payment/PricingPage"
+}
+
+route CheckoutResultRoute { path: "/checkout", to: CheckoutResultPage }
+page CheckoutResultPage {
+  authRequired: true,
+  component: import { CheckoutResultPage } from "@src/payment/CheckoutResultPage"
+}
+
+query getCustomerPortalUrl {
+  fn: import { getCustomerPortalUrl } from  "@src/payment/operations",
+  entities: [User]
+}
+
+action generateCheckoutSession {
+  fn: import { generateCheckoutSession } from "@src/payment/operations",
+  entities: [User]
+}
+
+api paymentsWebhook {
+  fn: import { paymentsWebhook } from "@src/payment/webhook",
+  entities: [User],
+  middlewareConfigFn: import { paymentsMiddlewareConfigFn } from "@src/payment/webhook",
+  httpRoute: (POST, "/payments-webhook")
+}
+//#endregion
+
+//#region File Upload
+route FileUploadRoute { path: "/file-upload", to: FileUploadPage }
+page FileUploadPage {
+  authRequired: true,
+  component: import { FileUploadPage } from "@src/file-upload/FileUploadPage"
+}
+
+action createFileUploadUrl {
+  fn: import { createFileUploadUrl } from "@src/file-upload/operations",
+  entities: [User, File]
+}
+
+action addFileToDb {
+  fn: import { addFileToDb } from "@src/file-upload/operations",
+  entities: [User, File]
+}
+
+query getAllFilesByUser {
+  fn: import { getAllFilesByUser } from "@src/file-upload/operations",
+  entities: [User, File]
+}
+
+query getDownloadFileSignedURL {
+  fn: import { getDownloadFileSignedURL } from "@src/file-upload/operations",
+  entities: [User, File]
+}
+
+action deleteFile {
+  fn: import { deleteFile } from "@src/file-upload/operations",
+  entities: [User, File]
+}
+//#endregion
+
+//#region Analytics
+query getDailyStats {
+  fn: import { getDailyStats } from "@src/analytics/operations",
+  entities: [User, DailyStats]
+}
+
+job dailyStatsJob {
+  executor: PgBoss,
+  perform: {
+    fn: import { calculateDailyStats } from "@src/analytics/stats"
+  },
+  schedule: {
+    cron: "0 * * * *" // every hour. useful in production
+    // cron: "* * * * *" // every minute. useful for debugging
+  },
+  entities: [User, DailyStats, Logs, PageViewSource]
+}
+//#endregion
+
+//#region Admin Dashboard
+route AdminRoute { path: "/admin", to: AnalyticsDashboardPage }
+page AnalyticsDashboardPage {
+  authRequired: true,
+  component: import { AnalyticsDashboardPage } from "@src/admin/dashboards/analytics/AnalyticsDashboardPage"
+}
+
+route AdminUsersRoute { path: "/admin/users", to: AdminUsersPage }
+page AdminUsersPage {
+  authRequired: true,
+  component: import { UsersDashboardPage } from "@src/admin/dashboards/users/UsersDashboardPage"
+}
+
+route AdminSettingsRoute { path: "/admin/settings", to: AdminSettingsPage }
+page AdminSettingsPage {
+  authRequired: true,
+  component: import { SettingsPage } from "@src/admin/elements/settings/SettingsPage"
+}
+
+route AdminCalendarRoute { path: "/admin/calendar", to: AdminCalendarPage }
+page AdminCalendarPage {
+  authRequired: true,
+  component: import { CalendarPage } from "@src/admin/elements/calendar/CalendarPage"
+}
+
+
+route AdminUIButtonsRoute { path: "/admin/ui/buttons", to: AdminUIButtonsPage }
+page AdminUIButtonsPage {
+  authRequired: true,
+  component: import { ButtonsPage } from "@src/admin/elements/ui-elements/ButtonsPage"
+}
+
+route NotFoundRoute { path: "*", to: NotFoundPage }
+page NotFoundPage {
+  component: import { NotFoundPage } from "@src/client/components/NotFoundPage"
+}
+//#endregion
+
+//#region Contact Form Messages
+// TODO:
+// add functionality to allow users to send messages to admin
+// and make them accessible via the admin dashboard
+route AdminMessagesRoute { path: "/admin/messages", to: AdminMessagesPage }
+page AdminMessagesPage {
+  authRequired: true,
+  component: import { AdminMessages } from "@src/admin/dashboards/messages/MessagesPage"
+}
+//#endregion
+
+//#region App Dashboard (Multi-Tenant)
+route DashboardRoute { path: "/app/dashboard", to: DashboardPage }
+page DashboardPage {
+  authRequired: true,
+  component: import { DashboardPage } from "@src/app/dashboard/DashboardPage"
+}
+
+route AgentsRoute { path: "/app/agents", to: AgentsPage }
+page AgentsPage {
+  authRequired: true,
+  component: import { AgentsPage } from "@src/app/agents/AgentsPage"
+}
+
+route NewAgentRoute { path: "/app/agents/new", to: NewAgentPage }
+page NewAgentPage {
+  authRequired: true,
+  component: import { NewAgentPage } from "@src/app/agents/NewAgentPage"
+}
+
+route EditAgentRoute { path: "/app/agents/:id/edit", to: EditAgentPage }
+page EditAgentPage {
+  authRequired: true,
+  component: import { EditAgentPage } from "@src/app/agents/EditAgentPage"
+}
+
+route AgentDetailRoute { path: "/app/agents/:id", to: AgentDetailPage }
+page AgentDetailPage {
+  authRequired: true,
+  component: import { AgentDetailPage } from "@src/app/agents/AgentDetailPage"
+}
+
+route WebsitesRoute { path: "/app/websites", to: WebsitesPage }
+page WebsitesPage {
+  authRequired: true,
+  component: import { WebsitesPage } from "@src/app/websites/WebsitesPage"
+}
+
+route NewWebsiteRoute { path: "/app/websites/new", to: NewWebsitePage }
+page NewWebsitePage {
+  authRequired: true,
+  component: import { NewWebsitePage } from "@src/app/websites/NewWebsitePage"
+}
+
+route EditWebsiteRoute { path: "/app/websites/:id/edit", to: EditWebsitePage }
+page EditWebsitePage {
+  authRequired: true,
+  component: import { EditWebsitePage } from "@src/app/websites/EditWebsitePage"
+}
+
+route InstallRoute { path: "/app/install", to: InstallPage }
+page InstallPage {
+  authRequired: true,
+  component: import { InstallPage } from "@src/app/install/InstallPage"
+}
+
+route ConversationsRoute { path: "/app/conversations", to: ConversationsPage }
+page ConversationsPage {
+  authRequired: true,
+  component: import { ConversationsPage } from "@src/app/conversations/ConversationsPage"
+}
+
+route ConversationDetailRoute { path: "/app/conversations/:id", to: ConversationDetailPage }
+page ConversationDetailPage {
+  authRequired: true,
+  component: import { ConversationDetailPage } from "@src/app/conversations/ConversationDetailPage"
+}
+
+route LeadsRoute { path: "/app/leads", to: LeadsPage }
+page LeadsPage {
+  authRequired: true,
+  component: import { LeadsPage } from "@src/app/leads/LeadsPage"
+}
+
+route AnalyticsRoute { path: "/app/analytics", to: AnalyticsPage }
+page AnalyticsPage {
+  authRequired: true,
+  component: import { AnalyticsPage } from "@src/app/analytics/AnalyticsPage"
+}
+
+route KnowledgeBasesRoute { path: "/app/knowledge", to: KnowledgeBasesPage }
+page KnowledgeBasesPage {
+  authRequired: true,
+  component: import { KnowledgeBasesPage } from "@src/app/knowledge/KnowledgeBasesPage"
+}
+
+route NewKnowledgeBaseRoute { path: "/app/knowledge/new", to: NewKnowledgeBasePage }
+page NewKnowledgeBasePage {
+  authRequired: true,
+  component: import { NewKnowledgeBasePage } from "@src/app/knowledge/NewKnowledgeBasePage"
+}
+
+route KnowledgeBaseDetailRoute { path: "/app/knowledge/:id", to: KnowledgeBaseDetailPage }
+page KnowledgeBaseDetailPage {
+  authRequired: true,
+  component: import { KnowledgeBaseDetailPage } from "@src/app/knowledge/KnowledgeBaseDetailPage"
+}
+
+route AppSettingsRoute { path: "/app/settings", to: AppSettingsPage }
+page AppSettingsPage {
+  authRequired: true,
+  component: import { AppSettingsPage } from "@src/app/settings/AppSettingsPage"
+}
+
+route AcceptInvitationRoute { path: "/app/accept-invitation/:token", to: AcceptInvitationPage }
+page AcceptInvitationPage {
+  authRequired: true,
+  component: import { AcceptInvitationPage } from "@src/app/invitations/AcceptInvitationPage"
+}
+
+// Queries
+query getOrganization {
+  fn: import { getOrganization } from "@src/app/operations",
+  entities: [Organization, OrganizationMember, User]
+}
+
+query getOrganizationMembers {
+  fn: import { getOrganizationMembers } from "@src/app/operations",
+  entities: [Organization, OrganizationMember, User]
+}
+
+query getAgents {
+  fn: import { getAgents } from "@src/app/operations",
+  entities: [Organization, Agent]
+}
+
+query getAgent {
+  fn: import { getAgent } from "@src/app/operations",
+  entities: [Organization, Agent]
+}
+
+query getAgentStats {
+  fn: import { getAgentStats } from "@src/app/operations",
+  entities: [Organization, Agent, Conversation, Message, Lead]
+}
+
+query getWebsites {
+  fn: import { getWebsites } from "@src/app/operations",
+  entities: [Organization, Website]
+}
+
+query getWebsite {
+  fn: import { getWebsite } from "@src/app/operations",
+  entities: [Organization, Website]
+}
+
+query getConversations {
+  fn: import { getConversations } from "@src/app/operations",
+  entities: [Organization, Conversation, Message, Lead]
+}
+
+query getConversationMessages {
+  fn: import { getConversationMessages } from "@src/app/operations",
+  entities: [Conversation, Message]
+}
+
+query getLeads {
+  fn: import { getLeads } from "@src/app/operations",
+  entities: [Organization, Lead, Website, Conversation, Message]
+}
+
+action updateLead {
+  fn: import { updateLead } from "@src/app/operations",
+  entities: [Organization, Lead]
+}
+
+action deleteLead {
+  fn: import { deleteLead } from "@src/app/operations",
+  entities: [Organization, Lead, Conversation]
+}
+
+query getDashboardStats {
+  fn: import { getDashboardStats } from "@src/app/operations",
+  entities: [Organization, Agent, Website, Conversation, Lead]
+}
+
+query getAnalyticsData {
+  fn: import { getAnalyticsData } from "@src/app/operations",
+  entities: [Organization, Conversation, Message, Lead, AiUsage, Visitor]
+}
+
+// Actions
+action createOrganization {
+  fn: import { createOrganization } from "@src/app/operations",
+  entities: [Organization, OrganizationMember, User]
+}
+
+action updateOrganization {
+  fn: import { updateOrganization } from "@src/app/operations",
+  entities: [Organization]
+}
+
+action inviteMember {
+  fn: import { inviteMember } from "@src/app/operations",
+  entities: [Organization, OrganizationMember, User]
+}
+
+action removeMember {
+  fn: import { removeMember } from "@src/app/operations",
+  entities: [OrganizationMember]
+}
+
+action createAgent {
+  fn: import { createAgent } from "@src/app/operations",
+  entities: [Organization, Agent]
+}
+
+action updateAgent {
+  fn: import { updateAgent } from "@src/app/operations",
+  entities: [Agent]
+}
+
+action deleteAgent {
+  fn: import { deleteAgent } from "@src/app/operations",
+  entities: [Agent]
+}
+
+action createWebsite {
+  fn: import { createWebsite } from "@src/app/operations",
+  entities: [Organization, Website]
+}
+
+action updateWebsite {
+  fn: import { updateWebsite } from "@src/app/operations",
+  entities: [Website]
+}
+
+action deleteWebsite {
+  fn: import { deleteWebsite } from "@src/app/operations",
+  entities: [Website]
+}
+
+// Queries - Knowledge Base
+query getKnowledgeBases {
+  fn: import { getKnowledgeBases } from "@src/app/operations",
+  entities: [Organization, KnowledgeBase, KnowledgeDocument]
+}
+
+query getKnowledgeBase {
+  fn: import { getKnowledgeBase } from "@src/app/operations",
+  entities: [Organization, KnowledgeBase, KnowledgeDocument, DocumentChunk, Agent, AgentKnowledgeBase]
+}
+
+query getKnowledgeDocuments {
+  fn: import { getKnowledgeDocuments } from "@src/app/operations",
+  entities: [Organization, KnowledgeBase, KnowledgeDocument, DocumentChunk]
+}
+
+query getAgentKnowledgeBases {
+  fn: import { getAgentKnowledgeBases } from "@src/app/operations",
+  entities: [Agent, KnowledgeBase, AgentKnowledgeBase]
+}
+
+// Actions - Knowledge Base
+action createKnowledgeBase {
+  fn: import { createKnowledgeBase } from "@src/app/operations",
+  entities: [Organization, KnowledgeBase]
+}
+
+action deleteKnowledgeBase {
+  fn: import { deleteKnowledgeBase } from "@src/app/operations",
+  entities: [KnowledgeBase, KnowledgeDocument, DocumentChunk, AgentKnowledgeBase]
+}
+
+action uploadKnowledgeDocument {
+  fn: import { uploadKnowledgeDocument } from "@src/app/operations",
+  entities: [KnowledgeBase, KnowledgeDocument, DocumentChunk]
+}
+
+action crawlUrl {
+  fn: import { crawlUrl } from "@src/app/operations",
+  entities: [KnowledgeBase, KnowledgeDocument, DocumentChunk]
+}
+
+action deleteKnowledgeDocument {
+  fn: import { deleteKnowledgeDocument } from "@src/app/operations",
+  entities: [KnowledgeDocument, DocumentChunk]
+}
+
+action createCustomTextEntry {
+  fn: import { createCustomTextEntry } from "@src/app/operations",
+  entities: [KnowledgeBase, KnowledgeDocument, DocumentChunk]
+}
+
+action linkAgentToKnowledgeBase {
+  fn: import { linkAgentToKnowledgeBase } from "@src/app/operations",
+  entities: [Agent, KnowledgeBase, AgentKnowledgeBase]
+}
+
+action unlinkAgentFromKnowledgeBase {
+  fn: import { unlinkAgentFromKnowledgeBase } from "@src/app/operations",
+  entities: [AgentKnowledgeBase]
+}
+//#endregion
+
+//#region AI Settings
+query getAiSettings {
+  fn: import { getAiSettings } from "@src/app/operations",
+  entities: [Organization]
+}
+
+query getAiUsage {
+  fn: import { getAiUsage } from "@src/app/operations",
+  entities: [Organization, AiUsage]
+}
+
+action updateAiSettings {
+  fn: import { updateAiSettings } from "@src/app/operations",
+  entities: [Organization]
+}
+//#endregion
+
+//#region Organization Settings
+query verifyOrganizationSlug {
+  fn: import { verifyOrganizationSlug } from "@src/app/operations",
+  entities: [Organization]
+}
+
+query getInvitations {
+  fn: import { getInvitations } from "@src/app/operations",
+  entities: [Organization, Invitation, User]
+}
+
+query getAuditLogs {
+  fn: import { getAuditLogs } from "@src/app/operations",
+  entities: [Organization, AuditLog, User]
+}
+
+action sendInvitation {
+  fn: import { sendInvitation } from "@src/app/operations",
+  entities: [Organization, OrganizationMember, Invitation, User, AuditLog]
+}
+
+action cancelInvitation {
+  fn: import { cancelInvitation } from "@src/app/operations",
+  entities: [Organization, Invitation, AuditLog]
+}
+
+action acceptInvitation {
+  fn: import { acceptInvitation } from "@src/app/operations",
+  entities: [Organization, OrganizationMember, Invitation, User, AuditLog]
+}
+//#endregion
+
+//#region Widget API
+
+api widgetGetConfig {
+  fn: import { widgetGetConfig } from "@src/app/widget/api",
+  httpRoute: (GET, "/api/widget/:websiteId/config")
+}
+
+api widgetInit {
+  fn: import { widgetInit } from "@src/app/widget/api",
+  httpRoute: (POST, "/api/widget/init")
+}
+
+api widgetSendMessage {
+  fn: import { widgetSendMessage } from "@src/app/widget/api",
+  httpRoute: (POST, "/api/widget/message")
+}
+
+api widgetGetMessages {
+  fn: import { widgetGetMessages } from "@src/app/widget/api",
+  httpRoute: (GET, "/api/widget/messages/:conversationId")
+}
+
+//#endregion

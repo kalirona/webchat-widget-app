@@ -1,0 +1,376 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id                        String          @id @default(uuid())
+  createdAt                 DateTime        @default(now())
+
+  email                     String?         @unique
+  username                  String?         @unique
+  isAdmin                   Boolean         @default(false)
+
+  paymentProcessorUserId    String?         @unique
+  lemonSqueezyCustomerPortalUrl String?     // You can delete this if you're not using Lemon Squeezy as your payments processor.
+  subscriptionStatus        String?         // 'active', 'cancel_at_period_end', 'past_due', 'deleted'
+  subscriptionPlan          String?         // 'hobby', 'pro'
+  datePaid                  DateTime?
+  credits                   Int             @default(3)
+
+  gptResponses              GptResponse[]
+  contactFormMessages       ContactFormMessage[]
+  tasks                     Task[]
+  files                     File[]
+  organizationMemberships   OrganizationMember[]
+  invited                   Invitation[]
+  auditLogs                 AuditLog[]
+}
+
+model Organization {
+  id                        String          @id @default(uuid())
+  createdAt                 DateTime        @default(now())
+  updatedAt                 DateTime        @updatedAt
+  name                      String
+  logo                      String?
+
+  // Slug for subdomain routing (e.g., "my-org" → my-org.app.com)
+  slug                      String?         @unique
+  customDomain              String?         @unique
+  domainVerified            Boolean         @default(false)
+  branding                  Json?           // { primaryColor, logo, favicon, cssVariables }
+
+  // AI Configuration
+  aiProvider                String          @default("openai")
+  aiModel                   String          @default("gpt-4o")
+  openaiApiKey              String?
+  geminiApiKey              String?
+
+  // Usage Limits
+  monthlyTokenLimit         Int?            @default(100000)
+  monthlyConversationLimit  Int?            @default(1000)
+  memberLimit               Int?            @default(10)
+
+  // Billing (org-scoped, replaces user-scoped billing)
+  subscriptionStatus        String?         // 'trial', 'active', 'cancel_at_period_end', 'past_due', 'deleted'
+  subscriptionPlan          String?         // 'hobby', 'pro'
+  stripeCustomerId          String?         @unique
+  trialEndsAt               DateTime?
+
+  members                   OrganizationMember[]
+  agents                    Agent[]
+  websites                  Website[]
+  conversations             Conversation[]
+  leads                     Lead[]
+  knowledgeBases            KnowledgeBase[]
+  aiUsage                   AiUsage[]
+  invitations               Invitation[]
+  auditLogs                 AuditLog[]
+}
+
+model OrganizationMember {
+  id                        String          @id @default(uuid())
+  createdAt                 DateTime        @default(now())
+  updatedAt                 DateTime        @updatedAt
+  role                      String          @default("member")
+  invitedAt                 DateTime?
+  invitedById               String?
+
+  organization              Organization    @relation(fields: [organizationId], references: [id])
+  organizationId            String
+  user                      User            @relation(fields: [userId], references: [id])
+  userId                    String
+
+  @@unique([organizationId, userId])
+}
+
+model Invitation {
+  id                        String          @id @default(uuid())
+  createdAt                 DateTime        @default(now())
+  email                     String
+  token                     String          @unique
+  role                      String          @default("member")
+  expiresAt                 DateTime
+
+  organization              Organization    @relation(fields: [organizationId], references: [id])
+  organizationId            String
+  invitedBy                 User            @relation(fields: [invitedById], references: [id])
+
+  @@unique([organizationId, email])
+}
+
+model AuditLog {
+  id                        String          @id @default(uuid())
+  createdAt                 DateTime        @default(now())
+  action                    String
+  metadata                  Json?
+  ipAddress                 String?
+  userAgent                 String?
+
+  organization              Organization    @relation(fields: [organizationId], references: [id])
+  organizationId            String
+  user                      User?           @relation(fields: [userId], references: [id])
+  userId                    String?
+
+  @@index([organizationId, createdAt])
+}
+
+model Agent {
+  id                        String          @id @default(uuid())
+  createdAt                 DateTime        @default(now())
+  updatedAt                 DateTime        @updatedAt
+  name                      String
+  description               String?
+  model                     String          @default("gpt-4")
+  systemPrompt              String          @default("You are a helpful AI assistant.")
+  welcomeMessage            String?         @default("Hello! How can I help you today?")
+  temperature               Float           @default(0.7)
+  providerOverride          String?         @default(null)
+  modelOverride             String?         @default(null)
+  maxTokens                 Int             @default(4096)
+  status                    String          @default("draft")
+
+  organization              Organization    @relation(fields: [organizationId], references: [id])
+  organizationId            String
+  websites                  Website[]
+  conversations             Conversation[]
+  knowledgeBases            AgentKnowledgeBase[]
+}
+
+model Website {
+  id                        String          @id @default(uuid())
+  createdAt                 DateTime        @default(now())
+  updatedAt                 DateTime        @updatedAt
+  url                       String
+  name                      String
+  logoUrl                   String?
+  embedCode                 String?
+  status                    String          @default("active")
+
+  widgetColor               String          @default("#6366f1")
+  widgetPosition            String          @default("right")
+  widgetTitle               String          @default("AI Assistant")
+  widgetAvatarUrl           String?
+  allowedDomains            String[]
+  widgetWelcomeMessage      String          @default("Hello! How can I help you today?")
+
+  organization              Organization    @relation(fields: [organizationId], references: [id])
+  organizationId            String
+  agent                     Agent?          @relation(fields: [agentId], references: [id])
+  agentId                   String?
+  conversations             Conversation[]
+  leads                     Lead[]
+}
+
+model Visitor {
+  id                        String          @id @default(uuid())
+  createdAt                 DateTime        @default(now())
+  lastSeenAt                DateTime        @default(now())
+  sessionId                 String          @unique
+  email                     String?
+  name                      String?
+  ip                        String
+  userAgent                 String?
+  pageUrl                   String?
+
+  conversations             Conversation[]
+}
+
+model Conversation {
+  id                        String          @id @default(uuid())
+  createdAt                 DateTime        @default(now())
+  updatedAt                 DateTime        @updatedAt
+  visitorId                 String?
+
+  organization              Organization    @relation(fields: [organizationId], references: [id])
+  organizationId            String
+  agent                     Agent?          @relation(fields: [agentId], references: [id])
+  agentId                   String?
+  website                   Website?        @relation(fields: [websiteId], references: [id])
+  websiteId                 String?
+  visitor                   Visitor?        @relation(fields: [visitorId], references: [id])
+  messages                  Message[]
+  lead                      Lead?           @relation(fields: [leadId], references: [id])
+  leadId                    String?
+}
+
+model Message {
+  id                        String          @id @default(uuid())
+  createdAt                 DateTime        @default(now())
+  content                   String
+  role                      String
+  source                    String          @default("dashboard")
+  tokens                    Int?
+  cost                      Float?
+  model                     String?
+  status                    String          @default("completed")
+
+  conversation              Conversation    @relation(fields: [conversationId], references: [id])
+  conversationId            String
+}
+
+model Lead {
+  id                        String          @id @default(uuid())
+  createdAt                 DateTime        @default(now())
+  updatedAt                 DateTime        @updatedAt
+  email                     String?
+  name                      String?
+  phone                     String?
+  status                    String          @default("new")
+  notes                     String?
+
+  sourceWebsite             Website?        @relation(fields: [sourceWebsiteId], references: [id])
+  sourceWebsiteId           String?
+  organization              Organization    @relation(fields: [organizationId], references: [id])
+  organizationId            String
+  conversations             Conversation[]
+}
+
+model KnowledgeBase {
+  id                        String          @id @default(uuid())
+  createdAt                 DateTime        @default(now())
+  updatedAt                 DateTime        @updatedAt
+  name                      String
+  description               String?
+
+  organization              Organization    @relation(fields: [organizationId], references: [id])
+  organizationId            String
+  documents                 KnowledgeDocument[]
+  agents                    AgentKnowledgeBase[]
+}
+
+model KnowledgeDocument {
+  id                        String          @id @default(uuid())
+  createdAt                 DateTime        @default(now())
+  updatedAt                 DateTime        @updatedAt
+  title                     String
+  sourceType                String          // "upload" | "crawl"
+  sourceUrl                 String?
+  fileType                  String?         // "pdf" | "docx" | "txt" | "html"
+  status                    String          // "processing" | "ready" | "error"
+  errorMessage              String?
+  chunkCount                Int             @default(0)
+
+  knowledgeBase             KnowledgeBase   @relation(fields: [knowledgeBaseId], references: [id])
+  knowledgeBaseId           String
+  chunks                    DocumentChunk[]
+}
+
+model DocumentChunk {
+  id                        String          @id @default(uuid())
+  createdAt                 DateTime        @default(now())
+  content                   String
+  index                     Int
+
+  document                  KnowledgeDocument @relation(fields: [documentId], references: [id])
+  documentId                String
+}
+
+model AgentKnowledgeBase {
+  agent                     Agent           @relation(fields: [agentId], references: [id])
+  agentId                   String
+  knowledgeBase             KnowledgeBase   @relation(fields: [knowledgeBaseId], references: [id])
+  knowledgeBaseId           String
+
+  @@unique([agentId, knowledgeBaseId])
+}
+
+model GptResponse {
+  id                        String          @id @default(uuid())
+  createdAt                 DateTime        @default(now())
+  updatedAt                 DateTime        @updatedAt
+
+  user                      User            @relation(fields: [userId], references: [id])
+  userId                    String
+
+  content                   String
+}
+
+model Task {
+  id                        String          @id @default(uuid())
+  createdAt                 DateTime        @default(now())
+
+  user                      User            @relation(fields: [userId], references: [id])
+  userId                    String
+
+  description               String
+  time                      String          @default("1")
+  isDone                    Boolean         @default(false)
+}
+
+model File {
+  id                        String          @id @default(uuid())
+  createdAt                 DateTime        @default(now())
+
+  user                      User            @relation(fields: [userId], references: [id])
+  userId                    String
+
+  name                      String
+  type                      String
+  s3Key                     String
+}
+
+model DailyStats {
+  id                               Int             @id @default(autoincrement())
+  date                             DateTime        @default(now()) @unique
+
+  totalViews                       Int             @default(0)
+  prevDayViewsChangePercent        String          @default("0")
+  userCount                        Int             @default(0)
+  paidUserCount                    Int             @default(0)
+  userDelta                        Int             @default(0)
+  paidUserDelta                    Int             @default(0)
+  totalRevenue                     Float           @default(0)
+  totalProfit                      Float           @default(0)
+
+  sources                          PageViewSource[]
+}
+
+model PageViewSource {
+  @@id([date, name])
+  name                     String
+  date                     DateTime        @default(now())
+
+  dailyStats               DailyStats?     @relation(fields: [dailyStatsId], references: [id])
+  dailyStatsId             Int?
+
+  visitors                 Int
+}
+
+model Logs {
+  id                       Int             @id @default(autoincrement())
+  createdAt                DateTime        @default(now())
+
+  message                  String
+  level                    String
+}
+
+model ContactFormMessage {
+  id                        String          @id @default(uuid())
+  createdAt                 DateTime        @default(now())
+
+  user                      User            @relation(fields: [userId], references: [id])
+  userId                    String
+
+  content                   String
+  isRead                    Boolean         @default(false)
+  repliedAt                 DateTime?
+}
+
+model AiUsage {
+  id                        String          @id @default(uuid())
+  date                      DateTime        @default(now())
+  promptTokens              Int             @default(0)
+  completionTokens          Int             @default(0)
+  cost                      Float           @default(0)
+  model                     String
+
+  organization              Organization    @relation(fields: [organizationId], references: [id])
+  organizationId            String
+
+  @@unique([organizationId, date, model])
+}
