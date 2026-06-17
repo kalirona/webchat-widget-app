@@ -2,7 +2,7 @@
   const scriptTag = document.currentScript as HTMLScriptElement | null;
   if (!scriptTag) return;
 
-  const websiteId = scriptTag.getAttribute("data-website-id");
+  const websiteId = sanitizeWebsiteId(scriptTag.getAttribute("data-website-id") || "");
   if (!websiteId) return;
 
   const src = scriptTag.src;
@@ -20,10 +20,18 @@
     widgetAvatarUrl: string | null;
     welcomeMessage: string;
     agentName: string;
+    triggers?: Array<{
+      type: string;
+      config: Record<string, unknown>;
+      message: string;
+    }>;
+    hideBranding?: boolean;
+    companyName?: string;
   } | null = null;
   let conversationId: string | null = null;
   let sessionId = getSessionId();
   let polling = false;
+  let triggerFired = false;
 
   function getSessionId(): string {
     let sid = localStorage.getItem("widget_session_id");
@@ -62,7 +70,7 @@
     }
   }
 
-  async function sendMessage(content: string): Promise<{ id: string; content: string; createdAt: string } | null> {
+  async function sendMessage(content: string): Promise<{ id: string; content: string; createdAt: string; error?: string; escalated?: boolean } | null> {
     if (!conversationId) return null;
     try {
       const res = await fetch(getApiUrl("/message"), {
@@ -72,7 +80,7 @@
       });
       if (!res.ok) return null;
       const data = await res.json();
-      return data.message;
+      return { ...data.message, error: data.error, escalated: data.escalated };
     } catch {
       return null;
     }
@@ -91,6 +99,32 @@
     }
   }
 
+  async function requestHumanHandoff(email?: string, message?: string): Promise<boolean> {
+    if (!conversationId) return false;
+    try {
+      const res = await fetch(getApiUrl("/handoff"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ conversationId, email, message }),
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  }
+
+  async function pollAgentTyping(): Promise<boolean> {
+    if (!conversationId) return false;
+    try {
+      const res = await fetch(getApiUrl("/typing/" + conversationId));
+      if (!res.ok) return false;
+      const data = await res.json();
+      return data.isTyping;
+    } catch {
+      return false;
+    }
+  }
+
   function buildWidget(config: NonNullable<typeof config>) {
     const container = document.createElement("div");
     container.id = "opensaas-widget";
@@ -104,7 +138,7 @@
     const subtext = isDark ? "#9ca3af" : "#6b7280";
     const border = isDark ? "#374151" : "#e5e7eb";
     const inputBg = isDark ? "#374151" : "#f9fafb";
-    const userBubble = config.widgetColor;
+    const userBubble = sanitizeColor(config.widgetColor);
     const aiBubble = isDark ? "#374151" : "#f3f4f6";
     const aiText = isDark ? "#f3f4f6" : "#111827";
     const position = config.widgetPosition === "left" ? "left" : "right";
@@ -260,6 +294,28 @@
         0%, 80%, 100% { transform: scale(0.6); }
         40% { transform: scale(1); }
       }
+      .ow-typing-agent {
+        align-self: flex-start;
+        display: flex;
+        gap: 3px;
+        align-items: center;
+        padding: 10px 14px;
+        background: ${aiBubble};
+        border-radius: 16px;
+        border-bottom-left-radius: 4px;
+        font-size: 13px;
+        color: ${subtext};
+      }
+      .ow-typing-agent-text { margin-right: 2px; }
+      .ow-typing-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 3px;
+        background: ${subtext};
+        animation: owBounce 1.4s infinite ease-in-out;
+      }
+      .ow-typing-dot:nth-child(3) { animation-delay: 0.2s; }
+      .ow-typing-dot:nth-child(4) { animation-delay: 0.4s; }
       @keyframes owFadeIn {
         from { opacity: 0; transform: translateY(8px); }
         to { opacity: 1; transform: translateY(0); }
@@ -309,6 +365,25 @@
         color: ${subtext};
         font-size: 14px;
       }
+      .ow-handoff { padding: 8px 0; align-self: flex-start; width: 100%; }
+      .ow-handoff-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+      .ow-handoff-btn {
+        background: ${userBubble}; color: #fff; border: none; border-radius: 20px;
+        padding: 8px 16px; font-size: 13px; cursor: pointer; transition: opacity 0.2s;
+        white-space: nowrap;
+      }
+      .ow-handoff-btn:hover { opacity: 0.85; }
+      .ow-handoff-btn:disabled { opacity: 0.5; cursor: default; }
+      .ow-handoff-email-form { display: flex; gap: 8px; margin-top: 8px; }
+      .ow-handoff-email-input {
+        flex: 1; padding: 8px 12px; border: 1px solid ${border}; border-radius: 16px;
+        font-size: 13px; outline: none; background: ${inputBg}; color: ${text};
+      }
+      .ow-handoff-email-input:focus { border-color: ${userBubble}; }
+      .ow-footer {
+        text-align: center; padding: 6px 16px; font-size: 11px;
+        color: ${subtext}; border-top: 1px solid ${border};
+      }
       @media (max-width: 480px) {
         .ow-popup {
           bottom: 0;
@@ -333,7 +408,8 @@
 
     function addMessage(content: string, role: string, id?: string, status?: string) {
       const msgs = shadow.querySelector(".ow-messages")!;
-      const existingEl = id ? msgs.querySelector(`[data-msg-id="${id}"]`) : null;
+      const safeId = id ? escapeCssSelector(id) : null;
+      const existingEl = safeId ? msgs.querySelector(`[data-msg-id="${safeId}"]`) : null;
       if (existingEl) {
         existingEl.textContent = content;
         const time = existingEl.querySelector(".ow-time");
@@ -346,7 +422,7 @@
       }
       const div = document.createElement("div");
       div.className = "ow-message " + role + (status === "error" ? " ow-error" : "");
-      if (id) div.setAttribute("data-msg-id", id);
+      if (safeId) div.setAttribute("data-msg-id", safeId);
       div.textContent = content;
       if (status === "streaming") {
         div.classList.add("ow-streaming");
@@ -378,6 +454,72 @@
       }
     }
 
+    function showAgentTyping(show: boolean) {
+      const msgs = shadow.querySelector(".ow-messages")!;
+      const existing = shadow.querySelector(".ow-typing-agent");
+      if (existing) existing.remove();
+      if (show) {
+        const div = document.createElement("div");
+        div.className = "ow-typing-agent";
+        div.innerHTML = '<span class="ow-typing-agent-text">Agent is typing...</span><span class="ow-typing-dot"></span><span class="ow-typing-dot"></span><span class="ow-typing-dot"></span>';
+        msgs.appendChild(div);
+        scrollToBottom();
+      }
+    }
+
+    function showHandoffOptions() {
+      const msgs = shadow.querySelector(".ow-messages")!;
+      if (shadow.querySelector(".ow-handoff")) return;
+      const div = document.createElement("div");
+      div.className = "ow-handoff";
+      div.innerHTML = `
+        <div class="ow-handoff-buttons">
+          <button class="ow-handoff-human ow-handoff-btn">Chat with human</button>
+          <button class="ow-handoff-email-btn ow-handoff-btn">Leave your email</button>
+        </div>
+        <div class="ow-handoff-email-form" style="display:none">
+          <input type="email" class="ow-handoff-email-input" placeholder="your@email.com" />
+          <button class="ow-handoff-submit ow-handoff-btn">Send</button>
+        </div>
+      `;
+      msgs.appendChild(div);
+      scrollToBottom();
+
+      div.querySelector(".ow-handoff-human")!.addEventListener("click", async () => {
+        const btn = div.querySelector(".ow-handoff-human") as HTMLElement;
+        btn.textContent = "Connecting...";
+        btn.setAttribute("disabled", "true");
+        await requestHumanHandoff();
+        btn.textContent = "✓ Connected";
+        setTimeout(() => hideHandoffOptions(), 2000);
+      });
+
+      div.querySelector(".ow-handoff-email-btn")!.addEventListener("click", () => {
+        const form = div.querySelector(".ow-handoff-email-form") as HTMLElement;
+        const btn = div.querySelector(".ow-handoff-email-btn") as HTMLElement;
+        form.style.display = "flex";
+        btn.style.display = "none";
+      });
+
+      div.querySelector(".ow-handoff-submit")!.addEventListener("click", async () => {
+        const input = div.querySelector(".ow-handoff-email-input") as HTMLInputElement;
+        const email = input.value.trim();
+        if (!email) return;
+        const submitBtn = div.querySelector(".ow-handoff-submit") as HTMLElement;
+        submitBtn.textContent = "Sending...";
+        submitBtn.setAttribute("disabled", "true");
+        await requestHumanHandoff(email);
+        submitBtn.textContent = "✓ Sent";
+        input.value = "";
+        setTimeout(() => hideHandoffOptions(), 2000);
+      });
+    }
+
+    function hideHandoffOptions() {
+      const existing = shadow.querySelector(".ow-handoff");
+      if (existing) existing.remove();
+    }
+
     function getLastMessageId(): string | null {
       if (currentMessages.length === 0) return null;
       return currentMessages[currentMessages.length - 1].id || null;
@@ -390,6 +532,34 @@
       input.value = "";
       input.style.height = "auto";
 
+      // Detect human handoff requests
+      const handoffPhrases = ["talk to human", "human agent", "talk to agent", "speak to human", "real person", "escalate", "get help"];
+      const isHandoffRequest = handoffPhrases.some(p => content.toLowerCase().includes(p));
+
+      if (isHandoffRequest) {
+        addMessage(content, "user");
+        showTyping(true);
+        const success = await requestHumanHandoff(undefined, content);
+        showTyping(false);
+        if (success) {
+          addMessage("I've connected you with our support team. A human agent will get back to you shortly. If you'd like us to follow up by email, please share your email address below.", "ai");
+        } else {
+          addMessage("I'm sorry, I couldn't connect you with a human agent. Please try again or email us directly.", "ai");
+        }
+        return;
+      }
+
+      // Detect email sharing for handoff
+      const emailMatch = content.match(/[\w.-]+@[\w.-]+\.\w+/);
+      if (emailMatch && currentMessages.some(m => m.content.includes("share your email"))) {
+        addMessage(content, "user");
+        showTyping(true);
+        await requestHumanHandoff(emailMatch[0], content);
+        showTyping(false);
+        addMessage("Thank you! We've saved your email and a support agent will contact you shortly.", "ai");
+        return;
+      }
+
       addMessage(content, "user");
       showTyping(true);
 
@@ -398,6 +568,9 @@
         showTyping(false);
         lastMessageId = result.id;
         addMessage(result.content, "ai", result.id);
+        if (result.escalated) {
+          setTimeout(() => showHandoffOptions(), 500);
+        }
       }
     }
 
@@ -407,7 +580,7 @@
 
       const btn = document.createElement("button");
       btn.className = "ow-btn";
-      btn.style.background = config.widgetColor;
+      btn.style.background = sanitizeColor(config.widgetColor);
       btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`;
       shadow.appendChild(btn);
 
@@ -415,7 +588,7 @@
       popup.className = "ow-popup";
       const avatarHtml = config.widgetAvatarUrl
           ? `<img src="${escHtml(config.widgetAvatarUrl)}" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" />`
-          : `<div style="width:100%;height:100%;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;background:${config.widgetColor}">🤖</div>`;
+          : `<div style="width:100%;height:100%;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;background:${escHtml(sanitizeColor(config.widgetColor))}">🤖</div>`;
       
       popup.innerHTML = `
         <div class="ow-header">
@@ -429,6 +602,7 @@
         <div class="ow-messages">
           <div class="ow-welcome">${escHtml(config.welcomeMessage)}</div>
         </div>
+        ${config.hideBranding ? "" : `<div class="ow-footer">${config.companyName ? escHtml(config.companyName) : "Powered by AI Agent"}</div>`}
         <div class="ow-input-area">
           <textarea class="ow-input" placeholder="Type your message..." rows="1"></textarea>
           <button class="ow-send" disabled aria-label="Send">➤</button>
@@ -444,6 +618,10 @@
       btn.addEventListener("click", async () => {
         isOpen = !isOpen;
         popup.classList.toggle("open", isOpen);
+        if (isOpen && conversationId && !polling) {
+          polling = true;
+          startPolling();
+        }
         if (isOpen && !conversationId) {
           await initConversation(window.location.href);
           if (config.welcomeMessage) {
@@ -526,6 +704,13 @@
               if (!hasStreaming && streamingMessageId === null) {
                 showTyping(false);
               }
+              // Poll agent typing indicator
+              if (!hasStreaming) {
+                const agentTyping = await pollAgentTyping();
+                showAgentTyping(agentTyping);
+              } else {
+                showAgentTyping(false);
+              }
             } catch {}
           }
           polling = false;
@@ -534,6 +719,13 @@
     }
 
     initUI();
+
+    if (triggerFired && conversationId) {
+      setTimeout(() => {
+        const b = shadow.querySelector(".ow-btn") as HTMLElement;
+        if (b) b.click();
+      }, 500);
+    }
   }
 
   function escHtml(str: string): string {
@@ -542,10 +734,92 @@
     return div.innerHTML;
   }
 
+  function sanitizeColor(color: string): string {
+    // Only allow valid hex colors
+    if (/^#[0-9A-Fa-f]{6}$/.test(color)) return color;
+    if (/^#[0-9A-Fa-f]{3}$/.test(color)) return color;
+    // Default fallback
+    return "#6366f1";
+  }
+
+  function escapeCssSelector(str: string): string {
+    // Escape characters that could break CSS selectors or enable injection
+    return str.replace(/[^a-zA-Z0-9_-]/g, "");
+  }
+
+  function sanitizeWebsiteId(id: string): string {
+    // Only allow UUIDs (alphanumeric + hyphens)
+    return id.replace(/[^a-zA-Z0-9-]/g, "");
+  }
+
+  // --- Proactive Triggers ---
+  let triggerTimers: Array<ReturnType<typeof setTimeout>> = [];
+  let pendingTriggerMessage: string | null = null;
+  let pendingTriggerPageUrl: string | null = null;
+
+  function setupTriggers() {
+    const triggers = config?.triggers;
+    if (!triggers || triggers.length === 0) return;
+
+    const pageUrl = window.location.href;
+
+    for (const trigger of triggers) {
+      switch (trigger.type) {
+        case "time_on_page": {
+          const seconds = (trigger.config?.seconds as number) || 15;
+          const timer = setTimeout(async () => {
+            if (triggerFired) return;
+            triggerFired = true;
+            await initConversation(pageUrl);
+            await sendMessage(trigger.message);
+          }, seconds * 1000);
+          triggerTimers.push(timer);
+          break;
+        }
+        case "scroll_depth": {
+          const percentage = (trigger.config?.percentage as number) || 50;
+          const handler = async () => {
+            if (triggerFired) return;
+            const scrollPct = (window.scrollY + window.innerHeight) / document.documentElement.scrollHeight * 100;
+            if (scrollPct >= percentage) {
+              triggerFired = true;
+              window.removeEventListener("scroll", handler);
+              await initConversation(pageUrl);
+              await sendMessage(trigger.message);
+            }
+          };
+          window.addEventListener("scroll", handler, { passive: true });
+          break;
+        }
+        case "exit_intent": {
+          const handler = async (e: MouseEvent) => {
+            if (triggerFired || e.clientY > 10) return;
+            triggerFired = true;
+            document.removeEventListener("mouseleave", handler);
+            await initConversation(pageUrl);
+            await sendMessage(trigger.message);
+          };
+          document.addEventListener("mouseleave", handler);
+          break;
+        }
+        case "page_visit": {
+          const urlPattern = (trigger.config?.urlPattern as string) || "";
+          if (urlPattern && pageUrl.includes(urlPattern)) {
+            triggerFired = true;
+            initConversation(pageUrl);
+            sendMessage(trigger.message);
+          }
+          break;
+        }
+      }
+    }
+  }
+
   (async () => {
     await fetchConfig();
     if (config) {
       buildWidget(config);
+      setupTriggers();
     }
   })();
 })();

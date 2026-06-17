@@ -13,11 +13,13 @@ import {
   testimonials,
 } from "./contentSections";
 import { AIReady } from "./ExampleHighlightedFeature";
+import { PublicNavbar } from "../marketing/PublicNavbar";
 
 export function LandingPage() {
   return (
     <div className="bg-background text-foreground">
       <SchemaMarkup />
+      <PublicNavbar />
       <main className="isolate">
         <Hero />
         <ExamplesCarousel examples={examples} />

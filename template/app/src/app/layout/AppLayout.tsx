@@ -1,4 +1,4 @@
-import { ReactNode, useState } from "react";
+import { ReactNode, useState, memo } from "react";
 import { type AuthUser } from "wasp/auth";
 import { AppSidebar } from "./AppSidebar";
 import { AppTopbar } from "./AppTopbar";
@@ -8,7 +8,7 @@ interface Props {
   children?: ReactNode;
 }
 
-export function AppLayout({ children, user }: Props) {
+export const AppLayout = memo(function AppLayout({ children, user }: Props) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
@@ -30,4 +30,4 @@ export function AppLayout({ children, user }: Props) {
       </div>
     </div>
   );
-}
+});

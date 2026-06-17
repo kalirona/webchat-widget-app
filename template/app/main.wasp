@@ -220,6 +220,55 @@ api paymentsWebhook {
 }
 //#endregion
 
+//#region Public Marketing Pages
+route FeaturesPageRoute { path: "/features", to: FeaturesPage, prerender: true }
+page FeaturesPage {
+  component: import { FeaturesPage } from "@src/marketing/FeaturesPage"
+}
+
+route FAQPageRoute { path: "/faq", to: FAQPage, prerender: true }
+page FAQPage {
+  component: import { FAQPage } from "@src/marketing/FAQPage"
+}
+
+route BlogPageRoute { path: "/blog", to: BlogPage }
+page BlogPage {
+  component: import { BlogPage } from "@src/marketing/BlogPage"
+}
+
+route ContactPageRoute { path: "/contact", to: ContactPage }
+page ContactPage {
+  component: import { ContactPage } from "@src/marketing/ContactPage"
+}
+//#endregion
+
+//#region Documentation Center
+route InstallationDocPageRoute { path: "/docs/installation", to: InstallationDocPage, prerender: true }
+page InstallationDocPage {
+  component: import { InstallationDocPage } from "@src/docs/InstallationDocPage"
+}
+
+route WordPressDocPageRoute { path: "/docs/wordpress", to: WordPressDocPage, prerender: true }
+page WordPressDocPage {
+  component: import { WordPressDocPage } from "@src/docs/WordPressDocPage"
+}
+
+route ShopifyDocPageRoute { path: "/docs/shopify", to: ShopifyDocPage, prerender: true }
+page ShopifyDocPage {
+  component: import { ShopifyDocPage } from "@src/docs/ShopifyDocPage"
+}
+
+route HtmlDocPageRoute { path: "/docs/html", to: HtmlDocPage, prerender: true }
+page HtmlDocPage {
+  component: import { HtmlDocPage } from "@src/docs/HtmlDocPage"
+}
+
+route WebflowDocPageRoute { path: "/docs/webflow", to: WebflowDocPage, prerender: true }
+page WebflowDocPage {
+  component: import { WebflowDocPage } from "@src/docs/WebflowDocPage"
+}
+//#endregion
+
 //#region File Upload
 route FileUploadRoute { path: "/file-upload", to: FileUploadPage }
 page FileUploadPage {
@@ -370,6 +419,12 @@ page EditWebsitePage {
   component: import { EditWebsitePage } from "@src/app/websites/EditWebsitePage"
 }
 
+route TriggersRoute { path: "/app/websites/:websiteId/triggers", to: TriggersPage }
+page TriggersPage {
+  authRequired: true,
+  component: import { TriggersPage } from "@src/app/triggers/TriggersPage"
+}
+
 route InstallRoute { path: "/app/install", to: InstallPage }
 page InstallPage {
   authRequired: true,
@@ -476,6 +531,41 @@ query getConversationMessages {
   entities: [Conversation, Message]
 }
 
+query getConversationsInbox {
+  fn: import { getConversationsInbox } from "@src/app/operations",
+  entities: [Organization, Conversation, Message, Lead, Agent, Website, Visitor, User]
+}
+
+query getConversationDetail {
+  fn: import { getConversationDetail } from "@src/app/operations",
+  entities: [Organization, Conversation, Message, Lead, Agent, Website, Visitor]
+}
+
+action resolveConversation {
+  fn: import { resolveConversation } from "@src/app/operations",
+  entities: [Organization, Conversation]
+}
+
+action assignConversation {
+  fn: import { assignConversation } from "@src/app/operations",
+  entities: [Organization, Conversation, OrganizationMember]
+}
+
+action escalateConversation {
+  fn: import { escalateConversation } from "@src/app/operations",
+  entities: [Organization, Conversation, Message]
+}
+
+action sendAgentMessage {
+  fn: import { sendAgentMessage } from "@src/app/operations",
+  entities: [Organization, Conversation, Message]
+}
+
+action setAgentTyping {
+  fn: import { setAgentTyping } from "@src/app/operations",
+  entities: [Organization, Conversation]
+}
+
 query getLeads {
   fn: import { getLeads } from "@src/app/operations",
   entities: [Organization, Lead, Website, Conversation, Message]
@@ -491,6 +581,31 @@ action deleteLead {
   entities: [Organization, Lead, Conversation]
 }
 
+action createLead {
+  fn: import { createLead } from "@src/app/operations",
+  entities: [Organization, Lead, Website, User, OrganizationMember]
+}
+
+query getTriggers {
+  fn: import { getTriggers } from "@src/app/operations",
+  entities: [Organization, Website, Trigger, Agent]
+}
+
+action createTrigger {
+  fn: import { createTrigger } from "@src/app/operations",
+  entities: [Organization, Website, Trigger, Agent]
+}
+
+action updateTrigger {
+  fn: import { updateTrigger } from "@src/app/operations",
+  entities: [Organization, Website, Trigger]
+}
+
+action deleteTrigger {
+  fn: import { deleteTrigger } from "@src/app/operations",
+  entities: [Organization, Website, Trigger]
+}
+
 query getDashboardStats {
   fn: import { getDashboardStats } from "@src/app/operations",
   entities: [Organization, Agent, Website, Conversation, Lead]
@@ -499,6 +614,11 @@ query getDashboardStats {
 query getAnalyticsData {
   fn: import { getAnalyticsData } from "@src/app/operations",
   entities: [Organization, Conversation, Message, Lead, AiUsage, Visitor]
+}
+
+query getUsageQuota {
+  fn: import { getUsageQuota } from "@src/app/operations",
+  entities: [Organization, OrganizationMember, Website, Conversation, AiUsage]
 }
 
 // Actions
@@ -594,6 +714,11 @@ action crawlUrl {
   entities: [KnowledgeBase, KnowledgeDocument, DocumentChunk]
 }
 
+action crawlWebsite {
+  fn: import { crawlWebsite } from "@src/app/operations",
+  entities: [KnowledgeBase, KnowledgeDocument, DocumentChunk]
+}
+
 action deleteKnowledgeDocument {
   fn: import { deleteKnowledgeDocument } from "@src/app/operations",
   entities: [KnowledgeDocument, DocumentChunk]
@@ -684,6 +809,16 @@ api widgetSendMessage {
 api widgetGetMessages {
   fn: import { widgetGetMessages } from "@src/app/widget/api",
   httpRoute: (GET, "/api/widget/messages/:conversationId")
+}
+
+api widgetRequestHuman {
+  fn: import { widgetRequestHuman } from "@src/app/widget/api",
+  httpRoute: (POST, "/api/widget/handoff")
+}
+
+api widgetIsTyping {
+  fn: import { widgetIsTyping } from "@src/app/widget/api",
+  httpRoute: (GET, "/api/widget/typing/:conversationId")
 }
 
 //#endregion

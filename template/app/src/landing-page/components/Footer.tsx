@@ -1,3 +1,5 @@
+import { Link } from "wasp/client/router";
+
 interface NavigationItem {
   name: string;
   href: string;
@@ -28,12 +30,12 @@ export function Footer({
             <ul role="list" className="mt-6 space-y-4">
               {footerNavigation.app.map((item) => (
                 <li key={item.name}>
-                  <a
-                    href={item.href}
+                  <Link
+                    to={item.href}
                     className="text-sm leading-6 text-gray-600 hover:text-gray-900 dark:text-white"
                   >
                     {item.name}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -45,12 +47,12 @@ export function Footer({
             <ul role="list" className="mt-6 space-y-4">
               {footerNavigation.company.map((item) => (
                 <li key={item.name}>
-                  <a
-                    href={item.href}
+                  <Link
+                    to={item.href}
                     className="text-sm leading-6 text-gray-600 hover:text-gray-900 dark:text-white"
                   >
                     {item.name}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>

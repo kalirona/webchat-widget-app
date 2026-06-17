@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { type AuthUser } from "wasp/auth";
 import { useQuery, useAction } from "wasp/client/operations";
 import {
@@ -249,18 +249,21 @@ export function KnowledgeBaseDetailPage({ user }: { user: AuthUser }) {
   }
 
   // Filter documents by search query
-  const filteredDocuments = kb.documents.filter((doc) =>
-    searchQuery ? doc.title.toLowerCase().includes(searchQuery.toLowerCase()) : true
-  );
+  const filteredDocuments = useMemo(() =>
+    kb.documents.filter((doc) =>
+      searchQuery ? doc.title.toLowerCase().includes(searchQuery.toLowerCase()) : true
+    ), [kb.documents, searchQuery]);
 
   // Calculate stats
-  const totalChunks = kb.documents.reduce((sum, doc) => sum + doc.chunkCount, 0);
-  const readyDocs = kb.documents.filter((d) => d.status === "ready").length;
-  const processingDocs = kb.documents.filter((d) => d.status === "processing").length;
-  const errorDocs = kb.documents.filter((d) => d.status === "error").length;
+  const stats = useMemo(() => ({
+    totalChunks: kb.documents.reduce((sum, doc) => sum + doc.chunkCount, 0),
+    readyDocs: kb.documents.filter((d) => d.status === "ready").length,
+    processingDocs: kb.documents.filter((d) => d.status === "processing").length,
+    errorDocs: kb.documents.filter((d) => d.status === "error").length,
+  }), [kb.documents]);
 
-  const linkedAgentIds = kb.agents.map((a) => a.agent.id);
-  const availableAgents = agents?.agents.filter((a) => !linkedAgentIds.includes(a.id)) || [];
+  const linkedAgentIds = useMemo(() => kb.agents.map((a) => a.agent.id), [kb.agents]);
+  const availableAgents = useMemo(() => agents?.agents.filter((a) => !linkedAgentIds.includes(a.id)) || [], [agents, linkedAgentIds]);
 
   return (
     <AppLayout user={user}>
@@ -305,7 +308,7 @@ export function KnowledgeBaseDetailPage({ user }: { user: AuthUser }) {
               <SplitSquareVertical className="text-emerald-500 h-5 w-5" />
             </div>
             <div>
-              <p className="text-2xl font-bold">{totalChunks}</p>
+              <p className="text-2xl font-bold">{stats.totalChunks}</p>
               <p className="text-muted-foreground text-xs">Chunks</p>
             </div>
           </div>
@@ -327,7 +330,7 @@ export function KnowledgeBaseDetailPage({ user }: { user: AuthUser }) {
               <CheckCircle2 className="text-amber-500 h-5 w-5" />
             </div>
             <div>
-              <p className="text-2xl font-bold">{readyDocs}</p>
+              <p className="text-2xl font-bold">{stats.readyDocs}</p>
               <p className="text-muted-foreground text-xs">Ready</p>
             </div>
           </div>

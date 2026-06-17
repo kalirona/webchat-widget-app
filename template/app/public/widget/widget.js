@@ -1,9 +1,9 @@
-"use strict";(()=>{(()=>{let C=document.currentScript;if(!C)return;let E=C.getAttribute("data-website-id");if(!E)return;let q=C.src,S=q.substring(0,q.lastIndexOf("/"));S.includes("/widget")&&(S=S.replace("/widget",""));let L=null,p=null,Y=K(),T=!1;function K(){let e=localStorage.getItem("widget_session_id");return e||(e="ws_"+Math.random().toString(36).substring(2,15)+Date.now().toString(36),localStorage.setItem("widget_session_id",e)),e}function $(e){return S+"/api/widget"+e}async function R(){try{let e=await fetch($("/"+E+"/config"));if(!e.ok)return;L=await e.json()}catch{}}async function V(e){try{let a=await fetch($("/init"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({websiteId:E,sessionId:Y,pageUrl:e})});return a.ok?(p=(await a.json()).conversationId,p):null}catch{return null}}async function W(e){if(!p)return null;try{let a=await fetch($("/message"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({conversationId:p,content:e})});return a.ok?(await a.json()).message:null}catch{return null}}async function G(e){if(!p)return[];try{let a=$("/messages/"+p),s=await fetch(a);return s.ok?(await s.json()).messages:[]}catch{return[]}}function Q(e){let a=document.createElement("div");a.id="opensaas-widget",a.style.all="initial";let s=a.attachShadow({mode:"closed"}),g=window.matchMedia("(prefers-color-scheme: dark)").matches,X=g?"#1f2937":"#ffffff",P=g?"#f3f4f6":"#111827",M=g?"#9ca3af":"#6b7280",h=g?"#374151":"#e5e7eb",Z=g?"#374151":"#f9fafb",H=e.widgetColor,U=g?"#374151":"#f3f4f6",ee=g?"#f3f4f6":"#111827",B=e.widgetPosition==="left"?"left":"right",d=!1,u=[],O=!1,b=null,y=null,D=document.createElement("style");D.textContent=`
+"use strict";(()=>{(()=>{let O=document.currentScript;if(!O)return;let _=re(O.getAttribute("data-website-id")||"");if(!_)return;let J=O.src,P=J.substring(0,J.lastIndexOf("/"));P.includes("/widget")&&(P=P.replace("/widget",""));let z=null,c=null,ee=te(),T=!1,x=!1;function te(){let e=localStorage.getItem("widget_session_id");return e||(e="ws_"+Math.random().toString(36).substring(2,15)+Date.now().toString(36),localStorage.setItem("widget_session_id",e)),e}function S(e){return P+"/api/widget"+e}async function ne(){try{let e=await fetch(S("/"+_+"/config"));if(!e.ok)return;z=await e.json()}catch{}}async function E(e){try{let a=await fetch(S("/init"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({websiteId:_,sessionId:ee,pageUrl:e})});return a.ok?(c=(await a.json()).conversationId,c):null}catch{return null}}async function L(e){if(!c)return null;try{let a=await fetch(S("/message"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({conversationId:c,content:e})});if(!a.ok)return null;let t=await a.json();return{...t.message,error:t.error,escalated:t.escalated}}catch{return null}}async function oe(e){if(!c)return[];try{let a=S("/messages/"+c),t=await fetch(a);return t.ok?(await t.json()).messages:[]}catch{return[]}}async function B(e,a){if(!c)return!1;try{return(await fetch(S("/handoff"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({conversationId:c,email:e,message:a})})).ok}catch{return!1}}async function se(){if(!c)return!1;try{let e=await fetch(S("/typing/"+c));return e.ok?(await e.json()).isTyping:!1}catch{return!1}}function ie(e){let a=document.createElement("div");a.id="opensaas-widget",a.style.all="initial";let t=a.attachShadow({mode:"closed"}),l=window.matchMedia("(prefers-color-scheme: dark)").matches,y=l?"#1f2937":"#ffffff",N=l?"#f3f4f6":"#111827",v=l?"#9ca3af":"#6b7280",k=l?"#374151":"#e5e7eb",W=l?"#374151":"#f9fafb",C=U(e.widgetColor),D=l?"#374151":"#f3f4f6",ce=l?"#f3f4f6":"#111827",F=e.widgetPosition==="left"?"left":"right",m=!1,h=[],Z=!1,H=null,q=null,K=document.createElement("style");K.textContent=`
       * { box-sizing: border-box; margin: 0; padding: 0; }
       .ow-btn {
         position: fixed;
         bottom: 24px;
-        ${B}: 24px;
+        ${F}: 24px;
         z-index: 2147483646;
         width: 60px;
         height: 60px;
@@ -22,21 +22,21 @@
       .ow-popup {
         position: fixed;
         bottom: 100px;
-        ${B}: 24px;
+        ${F}: 24px;
         z-index: 2147483647;
         width: 380px;
         max-width: calc(100vw - 48px);
         height: 600px;
         max-height: calc(100vh - 140px);
-        background: ${X};
+        background: ${y};
         border-radius: 16px;
         box-shadow: 0 8px 32px rgba(0,0,0,0.12);
         display: none;
         flex-direction: column;
-        border: 1px solid ${h};
+        border: 1px solid ${k};
         overflow: hidden;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        color: ${P};
+        color: ${N};
       }
       .ow-popup.open { display: flex; }
       .ow-header {
@@ -44,7 +44,7 @@
         display: flex;
         align-items: center;
         gap: 12px;
-        border-bottom: 1px solid ${h};
+        border-bottom: 1px solid ${k};
       }
       .ow-avatar {
         width: 40px;
@@ -63,14 +63,14 @@
         background: none;
         border: none;
         cursor: pointer;
-        color: ${M};
+        color: ${v};
         padding: 4px;
         border-radius: 4px;
         display: flex;
         align-items: center;
         justify-content: center;
       }
-      .ow-close:hover { background: ${h}; }
+      .ow-close:hover { background: ${k}; }
       .ow-messages {
         flex: 1;
         overflow-y: auto;
@@ -91,14 +91,14 @@
       }
       .ow-message.user {
         align-self: flex-end;
-        background: ${H};
+        background: ${C};
         color: #fff;
         border-bottom-right-radius: 4px;
       }
       .ow-message.ai {
         align-self: flex-start;
-        background: ${U};
-        color: ${ee};
+        background: ${D};
+        color: ${ce};
         border-bottom-left-radius: 4px;
       }
       .ow-message.ai.ow-streaming::after {
@@ -125,7 +125,7 @@
         display: flex;
         gap: 4px;
         padding: 12px 16px;
-        background: ${U};
+        background: ${D};
         border-radius: 16px;
         border-bottom-left-radius: 4px;
       }
@@ -133,7 +133,7 @@
         width: 8px;
         height: 8px;
         border-radius: 4px;
-        background: ${M};
+        background: ${v};
         animation: owBounce 1.4s infinite ease-in-out;
       }
       .ow-typing span:nth-child(2) { animation-delay: 0.2s; }
@@ -142,39 +142,61 @@
         0%, 80%, 100% { transform: scale(0.6); }
         40% { transform: scale(1); }
       }
+      .ow-typing-agent {
+        align-self: flex-start;
+        display: flex;
+        gap: 3px;
+        align-items: center;
+        padding: 10px 14px;
+        background: ${D};
+        border-radius: 16px;
+        border-bottom-left-radius: 4px;
+        font-size: 13px;
+        color: ${v};
+      }
+      .ow-typing-agent-text { margin-right: 2px; }
+      .ow-typing-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 3px;
+        background: ${v};
+        animation: owBounce 1.4s infinite ease-in-out;
+      }
+      .ow-typing-dot:nth-child(3) { animation-delay: 0.2s; }
+      .ow-typing-dot:nth-child(4) { animation-delay: 0.4s; }
       @keyframes owFadeIn {
         from { opacity: 0; transform: translateY(8px); }
         to { opacity: 1; transform: translateY(0); }
       }
       .ow-input-area {
         padding: 12px 16px;
-        border-top: 1px solid ${h};
+        border-top: 1px solid ${k};
         display: flex;
         gap: 8px;
         align-items: flex-end;
       }
       .ow-input {
         flex: 1;
-        border: 1px solid ${h};
+        border: 1px solid ${k};
         border-radius: 24px;
         padding: 10px 16px;
         font-size: 14px;
         outline: none;
-        background: ${Z};
-        color: ${P};
+        background: ${W};
+        color: ${N};
         font-family: inherit;
         resize: none;
         max-height: 120px;
         line-height: 1.4;
       }
-      .ow-input::placeholder { color: ${M}; }
-      .ow-input:focus { border-color: ${H}; }
+      .ow-input::placeholder { color: ${v}; }
+      .ow-input:focus { border-color: ${C}; }
       .ow-send {
         width: 40px;
         height: 40px;
         border-radius: 20px;
         border: none;
-        background: ${H};
+        background: ${C};
         color: #fff;
         cursor: pointer;
         display: flex;
@@ -188,13 +210,32 @@
       .ow-welcome {
         text-align: center;
         padding: 24px 16px;
-        color: ${M};
+        color: ${v};
         font-size: 14px;
+      }
+      .ow-handoff { padding: 8px 0; align-self: flex-start; width: 100%; }
+      .ow-handoff-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+      .ow-handoff-btn {
+        background: ${C}; color: #fff; border: none; border-radius: 20px;
+        padding: 8px 16px; font-size: 13px; cursor: pointer; transition: opacity 0.2s;
+        white-space: nowrap;
+      }
+      .ow-handoff-btn:hover { opacity: 0.85; }
+      .ow-handoff-btn:disabled { opacity: 0.5; cursor: default; }
+      .ow-handoff-email-form { display: flex; gap: 8px; margin-top: 8px; }
+      .ow-handoff-email-input {
+        flex: 1; padding: 8px 12px; border: 1px solid ${k}; border-radius: 16px;
+        font-size: 13px; outline: none; background: ${W}; color: ${N};
+      }
+      .ow-handoff-email-input:focus { border-color: ${C}; }
+      .ow-footer {
+        text-align: center; padding: 6px 16px; font-size: 11px;
+        color: ${v}; border-top: 1px solid ${k};
       }
       @media (max-width: 480px) {
         .ow-popup {
           bottom: 0;
-          ${B}: 0;
+          ${F}: 0;
           width: 100vw;
           max-width: 100vw;
           height: 100vh;
@@ -202,20 +243,30 @@
           border-radius: 0;
         }
       }
-    `;function _(n){return n.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}function j(){let n=s.querySelector(".ow-messages");n&&(n.scrollTop=n.scrollHeight)}function f(n,o,i,l){let v=s.querySelector(".ow-messages"),r=i?v.querySelector(`[data-msg-id="${i}"]`):null;if(r){r.textContent=n;let x=r.querySelector(".ow-time");x&&(x.textContent=_(new Date)),r.className="ow-message "+o+(l==="error"?" ow-error":"");let c=u.findIndex(J=>J.id===i);c>=0&&(u[c]={id:i,content:n,role:o,status:l||"completed"}),j();return}let m=document.createElement("div");m.className="ow-message "+o+(l==="error"?" ow-error":""),i&&m.setAttribute("data-msg-id",i),m.textContent=n,l==="streaming"&&m.classList.add("ow-streaming");let k=document.createElement("div");k.className="ow-time",k.textContent=_(new Date),m.appendChild(k),v.appendChild(m),i&&!u.some(x=>x.id===i)&&u.push({id:i,content:n,role:o,status:l||"completed"}),j()}function w(n){let o=s.querySelector(".ow-messages"),i=s.querySelector(".ow-typing");if(i&&i.remove(),n){O=!0;let l=document.createElement("div");l.className="ow-typing",l.innerHTML="<span></span><span></span><span></span>",o.appendChild(l),j()}else O=!1}function se(){return u.length===0?null:u[u.length-1].id||null}async function F(){let n=s.querySelector(".ow-input"),o=n.value.trim();if(!o)return;n.value="",n.style.height="auto",f(o,"user"),w(!0);let i=await W(o);i&&(w(!1),b=i.id,f(i.content,"ai",i.id))}function te(){s.innerHTML="",s.appendChild(D);let n=document.createElement("button");n.className="ow-btn",n.style.background=e.widgetColor,n.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',s.appendChild(n);let o=document.createElement("div");o.className="ow-popup";let i=e.widgetAvatarUrl?`<img src="${I(e.widgetAvatarUrl)}" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" />`:`<div style="width:100%;height:100%;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;background:${e.widgetColor}">\u{1F916}</div>`;o.innerHTML=`
+    `;function V(o){return o.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}function A(){let o=t.querySelector(".ow-messages");o&&(o.scrollTop=o.scrollHeight)}function u(o,n,i,r){let f=t.querySelector(".ow-messages"),d=i?ae(i):null,p=d?f.querySelector(`[data-msg-id="${d}"]`):null;if(p){p.textContent=o;let g=p.querySelector(".ow-time");g&&(g.textContent=V(new Date)),p.className="ow-message "+n+(r==="error"?" ow-error":"");let R=h.findIndex(I=>I.id===i);R>=0&&(h[R]={id:i,content:o,role:n,status:r||"completed"}),A();return}let b=document.createElement("div");b.className="ow-message "+n+(r==="error"?" ow-error":""),d&&b.setAttribute("data-msg-id",d),b.textContent=o,r==="streaming"&&b.classList.add("ow-streaming");let $=document.createElement("div");$.className="ow-time",$.textContent=V(new Date),b.appendChild($),f.appendChild(b),i&&!h.some(g=>g.id===i)&&h.push({id:i,content:o,role:n,status:r||"completed"}),A()}function w(o){let n=t.querySelector(".ow-messages"),i=t.querySelector(".ow-typing");if(i&&i.remove(),o){Z=!0;let r=document.createElement("div");r.className="ow-typing",r.innerHTML="<span></span><span></span><span></span>",n.appendChild(r),A()}else Z=!1}function G(o){let n=t.querySelector(".ow-messages"),i=t.querySelector(".ow-typing-agent");if(i&&i.remove(),o){let r=document.createElement("div");r.className="ow-typing-agent",r.innerHTML='<span class="ow-typing-agent-text">Agent is typing...</span><span class="ow-typing-dot"></span><span class="ow-typing-dot"></span><span class="ow-typing-dot"></span>',n.appendChild(r),A()}}function ue(){let o=t.querySelector(".ow-messages");if(t.querySelector(".ow-handoff"))return;let n=document.createElement("div");n.className="ow-handoff",n.innerHTML=`
+        <div class="ow-handoff-buttons">
+          <button class="ow-handoff-human ow-handoff-btn">Chat with human</button>
+          <button class="ow-handoff-email-btn ow-handoff-btn">Leave your email</button>
+        </div>
+        <div class="ow-handoff-email-form" style="display:none">
+          <input type="email" class="ow-handoff-email-input" placeholder="your@email.com" />
+          <button class="ow-handoff-submit ow-handoff-btn">Send</button>
+        </div>
+      `,o.appendChild(n),A(),n.querySelector(".ow-handoff-human").addEventListener("click",async()=>{let i=n.querySelector(".ow-handoff-human");i.textContent="Connecting...",i.setAttribute("disabled","true"),await B(),i.textContent="\u2713 Connected",setTimeout(()=>Q(),2e3)}),n.querySelector(".ow-handoff-email-btn").addEventListener("click",()=>{let i=n.querySelector(".ow-handoff-email-form"),r=n.querySelector(".ow-handoff-email-btn");i.style.display="flex",r.style.display="none"}),n.querySelector(".ow-handoff-submit").addEventListener("click",async()=>{let i=n.querySelector(".ow-handoff-email-input"),r=i.value.trim();if(!r)return;let f=n.querySelector(".ow-handoff-submit");f.textContent="Sending...",f.setAttribute("disabled","true"),await B(r),f.textContent="\u2713 Sent",i.value="",setTimeout(()=>Q(),2e3)})}function Q(){let o=t.querySelector(".ow-handoff");o&&o.remove()}function he(){return h.length===0?null:h[h.length-1].id||null}async function X(){let o=t.querySelector(".ow-input"),n=o.value.trim();if(!n)return;if(o.value="",o.style.height="auto",["talk to human","human agent","talk to agent","speak to human","real person","escalate","get help"].some(p=>n.toLowerCase().includes(p))){u(n,"user"),w(!0);let p=await B(void 0,n);w(!1),u(p?"I've connected you with our support team. A human agent will get back to you shortly. If you'd like us to follow up by email, please share your email address below.":"I'm sorry, I couldn't connect you with a human agent. Please try again or email us directly.","ai");return}let f=n.match(/[\w.-]+@[\w.-]+\.\w+/);if(f&&h.some(p=>p.content.includes("share your email"))){u(n,"user"),w(!0),await B(f[0],n),w(!1),u("Thank you! We've saved your email and a support agent will contact you shortly.","ai");return}u(n,"user"),w(!0);let d=await L(n);d&&(w(!1),H=d.id,u(d.content,"ai",d.id),d.escalated&&setTimeout(()=>ue(),500))}function fe(){t.innerHTML="",t.appendChild(K);let o=document.createElement("button");o.className="ow-btn",o.style.background=U(e.widgetColor),o.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',t.appendChild(o);let n=document.createElement("div");n.className="ow-popup";let i=e.widgetAvatarUrl?`<img src="${M(e.widgetAvatarUrl)}" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" />`:`<div style="width:100%;height:100%;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;background:${M(U(e.widgetColor))}">\u{1F916}</div>`;n.innerHTML=`
         <div class="ow-header">
           <div class="ow-avatar">${i}</div>
           <div class="ow-header-info">
-            <div class="ow-header-name">${I(e.widgetTitle||e.agentName)}</div>
+            <div class="ow-header-name">${M(e.widgetTitle||e.agentName)}</div>
             <div class="ow-header-status">\u25CF Online</div>
           </div>
           <button class="ow-close" aria-label="Close">\u2715</button>
         </div>
         <div class="ow-messages">
-          <div class="ow-welcome">${I(e.welcomeMessage)}</div>
+          <div class="ow-welcome">${M(e.welcomeMessage)}</div>
         </div>
+        ${e.hideBranding?"":`<div class="ow-footer">${e.companyName?M(e.companyName):"Powered by AI Agent"}</div>`}
         <div class="ow-input-area">
           <textarea class="ow-input" placeholder="Type your message..." rows="1"></textarea>
           <button class="ow-send" disabled aria-label="Send">\u27A4</button>
         </div>
-      `,s.appendChild(o);let l=s.querySelector(".ow-close"),v=s.querySelector(".ow-send"),r=s.querySelector(".ow-input"),m=s.querySelector(".ow-messages");n.addEventListener("click",async()=>{d=!d,o.classList.toggle("open",d),d&&!p&&(await V(window.location.href),e.welcomeMessage&&f(e.welcomeMessage,"ai"),T||(T=!0,x())),d||(T=!1),d&&setTimeout(()=>r.focus(),300)}),l.addEventListener("click",()=>{d=!1,o.classList.remove("open")});function k(){v.disabled=!r.value.trim()}r.addEventListener("input",()=>{k(),r.style.height="auto",r.style.height=Math.min(r.scrollHeight,120)+"px"}),r.addEventListener("keydown",c=>{c.key==="Enter"&&!c.shiftKey&&(c.preventDefault(),F())}),v.addEventListener("click",F);function x(){let c=!0;(async function(){for(;c&&d&&p&&(await new Promise(z=>setTimeout(z,2e3)),!(!c||!d));)try{let z=await G(b),A=!1;for(let t of z){if(t.role==="user")continue;let N=u.find(ne=>ne.id===t.id);if(N){(N.content!==t.content||N.status!==t.status)&&(f(t.content,"ai",t.id,t.status),t.status==="streaming"&&(A=!0,y=t.id),t.status==="completed"&&y===t.id&&(y=null));continue}t.status==="streaming"?(A=!0,y=t.id,w(!1),f(t.content,"ai",t.id,"streaming"),b=t.id):t.status==="completed"?(w(!1),f(t.content,"ai",t.id),b=t.id):t.status==="error"&&(w(!1),f(t.content,"ai",t.id,"error"),b=t.id)}!A&&y===null&&w(!1)}catch{}T=!1})()}}te()}function I(e){let a=document.createElement("div");return a.textContent=e,a.innerHTML}(async()=>(await R(),L&&Q(L)))()})();})();
+      `,t.appendChild(n);let r=t.querySelector(".ow-close"),f=t.querySelector(".ow-send"),d=t.querySelector(".ow-input"),p=t.querySelector(".ow-messages");o.addEventListener("click",async()=>{m=!m,n.classList.toggle("open",m),m&&c&&!T&&(T=!0,$()),m&&!c&&(await E(window.location.href),e.welcomeMessage&&u(e.welcomeMessage,"ai"),T||(T=!0,$())),m||(T=!1),m&&setTimeout(()=>d.focus(),300)}),r.addEventListener("click",()=>{m=!1,n.classList.remove("open")});function b(){f.disabled=!d.value.trim()}d.addEventListener("input",()=>{b(),d.style.height="auto",d.style.height=Math.min(d.scrollHeight,120)+"px"}),d.addEventListener("keydown",g=>{g.key==="Enter"&&!g.shiftKey&&(g.preventDefault(),X())}),f.addEventListener("click",X);function $(){let g=!0;(async function(){for(;g&&m&&c&&(await new Promise(I=>setTimeout(I,2e3)),!(!g||!m));)try{let I=await oe(H),j=!1;for(let s of I){if(s.role==="user")continue;let Y=h.find(pe=>pe.id===s.id);if(Y){(Y.content!==s.content||Y.status!==s.status)&&(u(s.content,"ai",s.id,s.status),s.status==="streaming"&&(j=!0,q=s.id),s.status==="completed"&&q===s.id&&(q=null));continue}s.status==="streaming"?(j=!0,q=s.id,w(!1),u(s.content,"ai",s.id,"streaming"),H=s.id):s.status==="completed"?(w(!1),u(s.content,"ai",s.id),H=s.id):s.status==="error"&&(w(!1),u(s.content,"ai",s.id,"error"),H=s.id)}if(!j&&q===null&&w(!1),j)G(!1);else{let s=await se();G(s)}}catch{}T=!1})()}}fe(),x&&c&&setTimeout(()=>{let o=t.querySelector(".ow-btn");o&&o.click()},500)}function M(e){let a=document.createElement("div");return a.textContent=e,a.innerHTML}function U(e){return/^#[0-9A-Fa-f]{6}$/.test(e)||/^#[0-9A-Fa-f]{3}$/.test(e)?e:"#6366f1"}function ae(e){return e.replace(/[^a-zA-Z0-9_-]/g,"")}function re(e){return e.replace(/[^a-zA-Z0-9-]/g,"")}let le=[],me=null,we=null;function de(){let e=z?.triggers;if(!e||e.length===0)return;let a=window.location.href;for(let t of e)switch(t.type){case"time_on_page":{let l=t.config?.seconds||15,y=setTimeout(async()=>{x||(x=!0,await E(a),await L(t.message))},l*1e3);le.push(y);break}case"scroll_depth":{let l=t.config?.percentage||50,y=async()=>{if(x)return;(window.scrollY+window.innerHeight)/document.documentElement.scrollHeight*100>=l&&(x=!0,window.removeEventListener("scroll",y),await E(a),await L(t.message))};window.addEventListener("scroll",y,{passive:!0});break}case"exit_intent":{let l=async y=>{x||y.clientY>10||(x=!0,document.removeEventListener("mouseleave",l),await E(a),await L(t.message))};document.addEventListener("mouseleave",l);break}case"page_visit":{let l=t.config?.urlPattern||"";l&&a.includes(l)&&(x=!0,E(a),L(t.message));break}}}(async()=>(await ne(),z&&(ie(z),de())))()})();})();

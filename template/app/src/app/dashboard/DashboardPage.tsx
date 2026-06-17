@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { type AuthUser } from "wasp/auth";
 import { useQuery } from "wasp/client/operations";
 import { getDashboardStats, getOrganization } from "wasp/client/operations";
@@ -216,7 +217,14 @@ export function DashboardPage({ user }: { user: AuthUser }) {
   );
 }
 
-function StatCard({
+const COLOR_CLASSES = {
+  blue: "bg-blue-500/10 text-blue-500",
+  emerald: "bg-emerald-500/10 text-emerald-500",
+  violet: "bg-violet-500/10 text-violet-500",
+  amber: "bg-amber-500/10 text-amber-500",
+} as const;
+
+const StatCard = memo(function StatCard({
   title,
   value,
   subtitle,
@@ -229,13 +237,6 @@ function StatCard({
   icon: React.ElementType;
   color: "blue" | "emerald" | "violet" | "amber";
 }) {
-  const colorClasses = {
-    blue: "bg-blue-500/10 text-blue-500",
-    emerald: "bg-emerald-500/10 text-emerald-500",
-    violet: "bg-violet-500/10 text-violet-500",
-    amber: "bg-amber-500/10 text-amber-500",
-  };
-
   return (
     <div className="bg-card rounded-2xl border border-border/50 p-6 shadow-sm transition-all hover:shadow-md">
       <div className="flex items-center justify-between">
@@ -246,10 +247,10 @@ function StatCard({
             <p className="text-muted-foreground mt-1 text-xs">{subtitle}</p>
           )}
         </div>
-        <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${colorClasses[color]}`}>
+        <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${COLOR_CLASSES[color]}`}>
           <Icon className="h-6 w-6" />
         </div>
       </div>
     </div>
   );
-}
+});

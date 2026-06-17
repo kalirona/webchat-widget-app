@@ -50,7 +50,7 @@ export function AppSidebar({ sidebarOpen, setSidebarOpen }: AppSidebarProps) {
     };
     document.addEventListener("click", clickHandler);
     return () => document.removeEventListener("click", clickHandler);
-  });
+  }, [sidebarOpen, setSidebarOpen]);
 
   useEffect(() => {
     const keyHandler = ({ keyCode }: KeyboardEvent) => {
@@ -59,7 +59,7 @@ export function AppSidebar({ sidebarOpen, setSidebarOpen }: AppSidebarProps) {
     };
     document.addEventListener("keydown", keyHandler);
     return () => document.removeEventListener("keydown", keyHandler);
-  });
+  }, [sidebarOpen, setSidebarOpen]);
 
   useEffect(() => {
     localStorage.setItem("app-sidebar-expanded", sidebarExpanded.toString());

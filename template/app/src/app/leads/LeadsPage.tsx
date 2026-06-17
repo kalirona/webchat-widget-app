@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { type AuthUser } from "wasp/auth";
 import { useQuery, useAction } from "wasp/client/operations";
 import { getLeads, updateLead, deleteLead } from "wasp/client/operations";
@@ -19,7 +19,13 @@ export function LeadsPage({ user }: { user: AuthUser }) {
   const deleteLeadAction = useAction(deleteLead);
 
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<LeadStatus | "all">("all");
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -32,14 +38,14 @@ export function LeadsPage({ user }: { user: AuthUser }) {
     if (!leads) return [];
     return leads.filter((lead) => {
       const matchesSearch =
-        !search ||
-        (lead.name?.toLowerCase().includes(search.toLowerCase())) ||
-        (lead.email?.toLowerCase().includes(search.toLowerCase())) ||
-        (lead.phone?.toLowerCase().includes(search.toLowerCase()));
+        !debouncedSearch ||
+        (lead.name?.toLowerCase().includes(debouncedSearch.toLowerCase())) ||
+        (lead.email?.toLowerCase().includes(debouncedSearch.toLowerCase())) ||
+        (lead.phone?.toLowerCase().includes(debouncedSearch.toLowerCase()));
       const matchesStatus = statusFilter === "all" || lead.status === statusFilter;
       return matchesSearch && matchesStatus;
     });
-  }, [leads, search, statusFilter]);
+  }, [leads, debouncedSearch, statusFilter]);
 
   const statusCounts = useMemo(() => {
     if (!leads) return { all: 0, new: 0, contacted: 0, closed: 0 };

@@ -14,8 +14,7 @@ function tokenize(text: string): string[] {
     .filter((w) => w.length > 2);
 }
 
-function scoreChunk(query: string, chunkContent: string): number {
-  const queryTokens = tokenize(query);
+function scoreChunk(queryTokens: string[], chunkContent: string): number {
   const chunkTokens = tokenize(chunkContent);
   if (queryTokens.length === 0 || chunkTokens.length === 0) return 0;
 
@@ -50,11 +49,12 @@ export async function retrieveRelevantChunks(
   });
 
   const allChunks: ScoredChunk[] = [];
+  const queryTokens = tokenize(query);
 
   for (const akb of agentKbs) {
     for (const doc of akb.knowledgeBase.documents) {
       for (const chunk of doc.chunks) {
-        const score = scoreChunk(query, chunk.content);
+        const score = scoreChunk(queryTokens, chunk.content);
         allChunks.push({ id: chunk.id, content: chunk.content, score });
       }
     }

@@ -3,6 +3,9 @@ import { createOpenAIProvider } from "./openai";
 import { createGeminiProvider } from "./gemini";
 import { retrieveRelevantChunks, buildKnowledgeContext } from "./rag";
 import { calculateCost } from "./cost";
+import { decryptSecret } from "../../shared/crypto";
+import { getAllowedModels, shouldWarnUsage } from "../billing/constants";
+import { sendLimitWarningEmail } from "../billing/emails";
 import type { AIProvider, GenerateResult } from "./provider";
 
 class AiError extends Error {
@@ -80,10 +83,18 @@ export async function generateAiResponse(
     include: {
       agent: true,
       website: { include: { organization: true } },
-      messages: { orderBy: { createdAt: "asc" } },
     },
   });
   if (!conversation) throw new Error("Conversation not found");
+
+  // Load only the last 20 completed messages (not all messages)
+  const recentMessagesRaw = await prisma.message.findMany({
+    where: { conversationId, status: "completed" },
+    orderBy: { createdAt: "desc" },
+    take: 20,
+    select: { role: true, content: true },
+  });
+  const recentMessages = recentMessagesRaw.reverse().map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
 
   const org = conversation.website?.organization ?? (await prisma.organization.findUnique({
     where: { id: conversation.organizationId },
@@ -116,10 +127,20 @@ export async function generateAiResponse(
     );
   }
 
-  const recentMessages = conversation.messages
-    .filter((m) => m.status === "completed")
-    .slice(-20)
-    .map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
+  // Send warning email at 80% usage (non-blocking)
+  if (shouldWarnUsage(totalTokens, tokenLimit)) {
+    sendLimitWarningEmail(org.id, "tokens", totalTokens, tokenLimit).catch(() => {});
+  }
+
+  // Check model restrictions
+  const allowedModels = getAllowedModels(org.subscriptionPlan);
+  if (allowedModels && !allowedModels.includes(model)) {
+    throw new AiError(
+      `Model "${model}" is not available on your plan. Allowed models: ${allowedModels.join(", ")}.`,
+      false,
+      "MODEL_NOT_ALLOWED",
+    );
+  }
 
   let knowledgeContext = "";
   if (conversation.agent) {
@@ -143,6 +164,16 @@ export async function generateAiResponse(
   });
 
   const chunks: string[] = [];
+  let lastFlushTime = 0;
+  let pendingFlush: ReturnType<typeof setTimeout> | null = null;
+
+  const flushChunks = async () => {
+    lastFlushTime = Date.now();
+    await prisma.message.update({
+      where: { id: streamingMessage.id },
+      data: { content: chunks.join("") },
+    });
+  };
 
   try {
     const result = await withRetry(async () => {
@@ -154,15 +185,27 @@ export async function generateAiResponse(
         maxTokens,
         onChunk: async (chunk) => {
           chunks.push(chunk);
-          await prisma.message.update({
-            where: { id: streamingMessage.id },
-            data: { content: chunks.join("") },
-          });
+          const now = Date.now();
+          // Flush immediately if 500ms since last flush, otherwise debounce
+          if (now - lastFlushTime >= 500) {
+            if (pendingFlush) { clearTimeout(pendingFlush); pendingFlush = null; }
+            await flushChunks();
+          } else if (!pendingFlush) {
+            pendingFlush = setTimeout(async () => {
+              pendingFlush = null;
+              await flushChunks();
+            }, 500);
+          }
         },
       });
     });
 
     const fullContent = chunks.join("");
+    // Ensure any pending debounced chunks are flushed
+    if (pendingFlush) { clearTimeout(pendingFlush); pendingFlush = null; }
+    if (chunks.length > 0 && Date.now() - lastFlushTime >= 100) {
+      await flushChunks();
+    }
     const cost = calculateCost(result.model, result.promptTokens, result.completionTokens);
     const totalTokens = result.promptTokens + result.completionTokens;
 
@@ -208,11 +251,11 @@ export async function generateAiResponse(
 function getAiProvider(provider: string, org: { openaiApiKey?: string | null; geminiApiKey?: string | null }): AIProvider | null {
   if (provider === "openai") {
     if (!org.openaiApiKey) return null;
-    return createOpenAIProvider(org.openaiApiKey);
+    return createOpenAIProvider(decryptSecret(org.openaiApiKey));
   }
   if (provider === "gemini") {
     if (!org.geminiApiKey) return null;
-    return createGeminiProvider(org.geminiApiKey);
+    return createGeminiProvider(decryptSecret(org.geminiApiKey));
   }
   return null;
 }

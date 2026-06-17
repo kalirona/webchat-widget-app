@@ -54,6 +54,7 @@ model Organization {
   monthlyTokenLimit         Int?            @default(100000)
   monthlyConversationLimit  Int?            @default(1000)
   memberLimit               Int?            @default(10)
+  websitesLimit             Int?            @default(1)
 
   // Billing (org-scoped, replaces user-scoped billing)
   subscriptionStatus        String?         // 'trial', 'active', 'cancel_at_period_end', 'past_due', 'deleted'
@@ -86,6 +87,7 @@ model OrganizationMember {
   userId                    String
 
   @@unique([organizationId, userId])
+  @@index([userId])
 }
 
 model Invitation {
@@ -139,6 +141,8 @@ model Agent {
   websites                  Website[]
   conversations             Conversation[]
   knowledgeBases            AgentKnowledgeBase[]
+
+  @@index([organizationId])
 }
 
 model Website {
@@ -164,6 +168,27 @@ model Website {
   agentId                   String?
   conversations             Conversation[]
   leads                     Lead[]
+  triggers                  Trigger[]
+
+  @@index([organizationId])
+}
+
+model Trigger {
+  id                        String          @id @default(uuid())
+  createdAt                 DateTime        @default(now())
+  updatedAt                 DateTime        @updatedAt
+  name                      String
+  type                      String          // "time_on_page" | "scroll_depth" | "exit_intent" | "page_visit"
+  config                    Json            // { seconds?: number, percentage?: number, urlPattern?: string }
+  message                   String          // Message to send when triggered
+  enabled                   Boolean         @default(true)
+
+  website                   Website         @relation(fields: [websiteId], references: [id])
+  websiteId                 String
+  agent                     Agent?          @relation(fields: [agentId], references: [id])
+  agentId                   String?
+
+  @@index([websiteId])
 }
 
 model Visitor {
@@ -186,6 +211,12 @@ model Conversation {
   updatedAt                 DateTime        @updatedAt
   visitorId                 String?
 
+  // Conversation status (bot/human/escalated)
+  status                    String          @default("bot") // "bot" | "human" | "escalated" | "resolved"
+  assignedToId              String?         // User ID of assigned human agent
+  resolvedAt                DateTime?       // When conversation was resolved
+  lastMessageAt             DateTime?       // Last message timestamp for sorting
+
   organization              Organization    @relation(fields: [organizationId], references: [id])
   organizationId            String
   agent                     Agent?          @relation(fields: [agentId], references: [id])
@@ -196,6 +227,10 @@ model Conversation {
   messages                  Message[]
   lead                      Lead?           @relation(fields: [leadId], references: [id])
   leadId                    String?
+
+  @@index([organizationId, createdAt])
+  @@index([organizationId, status])
+  @@index([agentId])
 }
 
 model Message {
@@ -211,6 +246,8 @@ model Message {
 
   conversation              Conversation    @relation(fields: [conversationId], references: [id])
   conversationId            String
+
+  @@index([conversationId])
 }
 
 model Lead {
@@ -228,6 +265,8 @@ model Lead {
   organization              Organization    @relation(fields: [organizationId], references: [id])
   organizationId            String
   conversations             Conversation[]
+
+  @@index([organizationId])
 }
 
 model KnowledgeBase {
@@ -241,6 +280,8 @@ model KnowledgeBase {
   organizationId            String
   documents                 KnowledgeDocument[]
   agents                    AgentKnowledgeBase[]
+
+  @@index([organizationId])
 }
 
 model KnowledgeDocument {
@@ -258,6 +299,8 @@ model KnowledgeDocument {
   knowledgeBase             KnowledgeBase   @relation(fields: [knowledgeBaseId], references: [id])
   knowledgeBaseId           String
   chunks                    DocumentChunk[]
+
+  @@index([knowledgeBaseId])
 }
 
 model DocumentChunk {
@@ -268,6 +311,8 @@ model DocumentChunk {
 
   document                  KnowledgeDocument @relation(fields: [documentId], references: [id])
   documentId                String
+
+  @@index([documentId])
 }
 
 model AgentKnowledgeBase {

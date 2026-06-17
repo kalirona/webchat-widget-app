@@ -6,7 +6,7 @@ import { useNavigate, useParams } from "react-router";
 import { routes, Link } from "wasp/client/router";
 import {
   Globe, ArrowLeft, Loader2, Copy, Check, Palette, Link2, Image,
-  MessageSquare, AlertCircle, Code2, Settings, ExternalLink,
+  MessageSquare, AlertCircle, Code2, Settings, ExternalLink, Zap,
 } from "lucide-react";
 import { AppLayout } from "../layout/AppLayout";
 import { Button } from "../../client/components/ui/button";
@@ -489,6 +489,22 @@ export function EditWebsitePage({ user }: { user: AuthUser }) {
                   </button>
                 </div>
               </div>
+
+              {/* Proactive Triggers */}
+              <Link
+                to={`/app/websites/${id}/triggers`}
+                className="bg-card hover:bg-accent/50 rounded-2xl border border-border/50 p-6 shadow-sm transition-colors block"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="bg-primary/10 text-primary rounded-xl p-3">
+                    <Zap className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-sm">Proactive Triggers</h3>
+                    <p className="text-muted-foreground text-xs mt-0.5">Auto-open widget based on visitor behavior</p>
+                  </div>
+                </div>
+              </Link>
 
               {/* Website Info */}
               <div className="bg-card rounded-2xl border border-border/50 p-6 shadow-sm">

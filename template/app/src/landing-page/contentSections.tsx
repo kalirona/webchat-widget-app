@@ -6,71 +6,72 @@ import promptpanda from "../client/static/examples/promptpanda.webp";
 import reviewradar from "../client/static/examples/reviewradar.webp";
 import scribeist from "../client/static/examples/scribeist.webp";
 import searchcraft from "../client/static/examples/searchcraft.webp";
-import { BlogUrl, DocsUrl } from "../shared/common";
 import type { GridFeature } from "./components/FeaturesGrid";
+
+export const features: GridFeature[] = [
 
 export const features: GridFeature[] = [
   {
     name: "Cool Feature 1",
     description: "Your feature",
     emoji: "🤝",
-    href: DocsUrl,
+    href: "/features",
     size: "small",
   },
   {
     name: "Cool Feature 2",
     description: "Feature description",
     emoji: "🔐",
-    href: DocsUrl,
+    href: "/features",
     size: "small",
   },
   {
     name: "Cool Feature 3",
     description: "Describe your cool feature here",
     emoji: "🥞",
-    href: DocsUrl,
+    href: "/features",
     size: "medium",
   },
   {
     name: "Cool Feature 4",
     description: "Describe your cool feature here",
     emoji: "💸",
-    href: DocsUrl,
+    href: "/features",
     size: "large",
   },
   {
     name: "Cool Feature 5",
     description: "Describe your cool feature here",
     emoji: "💼",
-    href: DocsUrl,
+    href: "/features",
     size: "large",
   },
   {
     name: "Cool Feature 6",
     description: "It is cool",
     emoji: "📈",
-    href: DocsUrl,
+    href: "/features",
     size: "small",
   },
   {
     name: "Cool Feature 7",
     description: "Cool feature",
     emoji: "📧",
-    href: DocsUrl,
+    href: "/features",
     size: "small",
   },
   {
     name: "Cool Feature 8",
     description: "Describe your cool feature here",
     emoji: "🤖",
-    href: DocsUrl,
+    href: "/features",
     size: "medium",
   },
   {
     name: "Cool Feature 9",
     description: "Describe your cool feature here",
     emoji: "🚀",
-    href: DocsUrl,
+    href: "/features",
     size: "medium",
   },
 ];
@@ -102,19 +103,40 @@ export const testimonials = [
 export const faqs = [
   {
     id: 1,
-    question: "Whats the meaning of life?",
-    answer: "42.",
-    href: "https://en.wikipedia.org/wiki/42_(number)",
+    question: "How does the AI chat widget work?",
+    answer: "Add a single script tag to your website. The widget automatically loads and engages visitors with AI-powered responses based on your knowledge base.",
+    href: "/faq",
+  },
+  {
+    id: 2,
+    question: "Which AI providers do you support?",
+    answer: "We support OpenAI (GPT-4o, GPT-4o-mini) and Google Gemini (Gemini 1.5 Pro, Flash, 2.5 Pro). You can configure your preferred provider in settings.",
+    href: "/faq",
+  },
+  {
+    id: 3,
+    question: "Can I customize the widget appearance?",
+    answer: "Yes! Customize colors, position, title, avatar, and welcome message. On Pro plans, remove our branding and add your own logo.",
+    href: "/faq",
+  },
+  {
+    id: 4,
+    question: "How does human handoff work?",
+    answer: "When AI fails or a visitor requests a human, conversations are escalated automatically. Team members get email notifications and can reply from the inbox.",
+    href: "/faq",
   },
 ];
 
 export const footerNavigation = {
   app: [
-    { name: "Documentation", href: DocsUrl },
-    { name: "Blog", href: BlogUrl },
+    { name: "Features", href: "/features" },
+    { name: "Pricing", href: "/pricing" },
+    { name: "FAQ", href: "/faq" },
+    { name: "Blog", href: "/blog" },
+    { name: "Documentation", href: "/docs/installation" },
   ],
   company: [
-    { name: "About", href: "https://wasp.sh" },
+    { name: "Contact", href: "/contact" },
     { name: "Privacy", href: "#" },
     { name: "Terms of Service", href: "#" },
   ],

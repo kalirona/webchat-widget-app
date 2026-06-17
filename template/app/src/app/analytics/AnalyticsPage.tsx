@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, memo } from "react";
 import { type AuthUser } from "wasp/auth";
 import { useQuery } from "wasp/client/operations";
 import { getAnalyticsData } from "wasp/client/operations";
@@ -20,7 +20,7 @@ function formatCost(n: number): string {
   return "$" + n.toFixed(2);
 }
 
-function MiniChart({ data, color }: { data: number[]; color: string }) {
+const MiniChart = memo(function MiniChart({ data, color }: { data: number[]; color: string }) {
   const max = Math.max(...data, 1);
   const points = data.map((v, i) => {
     const x = (i / (data.length - 1 || 1)) * 100;
@@ -49,9 +49,9 @@ function MiniChart({ data, color }: { data: number[]; color: string }) {
       />
     </svg>
   );
-}
+});
 
-function BarChartComponent({ data, color }: { data: { label: string; value: number }[]; color: string }) {
+const BarChartComponent = memo(function BarChartComponent({ data, color }: { data: { label: string; value: number }[]; color: string }) {
   const max = Math.max(...data.map((d) => d.value), 1);
 
   return (
@@ -71,7 +71,7 @@ function BarChartComponent({ data, color }: { data: { label: string; value: numb
       ))}
     </div>
   );
-}
+});
 
 export function AnalyticsPage({ user }: { user: AuthUser }) {
   const { data, isLoading, error } = useQuery(getAnalyticsData);

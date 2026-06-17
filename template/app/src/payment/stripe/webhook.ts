@@ -10,6 +10,8 @@ import { getPaymentPlanIdByPaymentProcessorPlanId } from "../paymentProcessorPla
 import { PaymentPlanId, paymentPlans, SubscriptionStatus } from "../plans";
 import { updateUserCredits, updateUserSubscription } from "../user";
 import { stripeClient } from "./stripeClient";
+import { getPlanLimits, prettyPaymentPlanName } from "../../app/billing/constants";
+import { sendSubscriptionActivatedEmail, sendSubscriptionCancelledEmail } from "../../app/billing/emails";
 
 /**
  * Stripe requires a raw request to construct events successfully.
@@ -115,7 +117,7 @@ async function handleInvoicePaid(
       break;
     case PaymentPlanId.Pro:
     case PaymentPlanId.Hobby:
-      await updateUserSubscription(
+      const user = await updateUserSubscription(
         {
           paymentProcessorUserId: customerId,
           datePaid: invoicePaidAtDate,
@@ -124,6 +126,10 @@ async function handleInvoicePaid(
         },
         prismaUserDelegate,
       );
+      // Sync org limits from plan
+      await syncOrgLimitsFromPlan(user.id, paymentPlanId);
+      // Send welcome/activated email
+      sendSubscriptionActivatedEmail(user.id, prettyPaymentPlanName(paymentPlanId)).catch(() => {});
       break;
     default:
       assertUnreachable(paymentPlanId);
@@ -167,6 +173,11 @@ async function handleCustomerSubscriptionUpdated(
     { paymentProcessorUserId: customerId, paymentPlanId, subscriptionStatus },
     prismaUserDelegate,
   );
+
+  // Sync org limits on plan change
+  if (subscriptionStatus === SubscriptionStatus.Active) {
+    await syncOrgLimitsFromPlan(user.id, paymentPlanId);
+  }
 
   if (subscription.cancel_at_period_end && user.email) {
     await emailSender.send({
@@ -230,13 +241,54 @@ async function handleCustomerSubscriptionDeleted(
   const subscription = event.data.object;
   const customerId = getCustomerId(subscription.customer);
 
-  await updateUserSubscription(
+  const user = await updateUserSubscription(
     {
       paymentProcessorUserId: customerId,
       subscriptionStatus: SubscriptionStatus.Deleted,
     },
     prismaUserDelegate,
   );
+
+  // Downgrade org to free limits
+  await syncOrgLimitsFromPlan(user.id, PaymentPlanId.Hobby); // fallback to hobby (free equivalent)
+  sendSubscriptionCancelledEmail(user.id, "Subscription").catch(() => {});
+}
+
+/**
+ * Syncs organization usage limits based on the subscription plan.
+ * Maps PaymentPlanId to PLAN_LIMITS and updates the user's organization.
+ */
+async function syncOrgLimitsFromPlan(
+  userId: string,
+  paymentPlanId: PaymentPlanId | null,
+): Promise<void> {
+  try {
+    const membership = await prisma.organizationMember.findFirst({
+      where: { userId, role: "owner" },
+    });
+    if (!membership) return;
+
+    // Map PaymentPlanId to billing plan key
+    const planKey = paymentPlanId === PaymentPlanId.Pro ? "pro"
+      : paymentPlanId === PaymentPlanId.Hobby ? "hobby"
+      : "free";
+
+    const limits = getPlanLimits(planKey);
+
+    await prisma.organization.update({
+      where: { id: membership.organizationId },
+      data: {
+        subscriptionPlan: planKey,
+        subscriptionStatus: paymentPlanId ? "active" : "free",
+        websitesLimit: limits.websites === Infinity ? null : limits.websites,
+        monthlyConversationLimit: limits.conversations === Infinity ? null : limits.conversations,
+        monthlyTokenLimit: limits.tokens === Infinity ? null : limits.tokens,
+        memberLimit: limits.members === Infinity ? null : limits.members,
+      },
+    });
+  } catch (err) {
+    console.error("Failed to sync org limits from plan:", err);
+  }
 }
 
 function getCustomerId(

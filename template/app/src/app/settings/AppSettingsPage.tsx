@@ -479,12 +479,22 @@ export function AppSettingsPage({ user }: { user: AuthUser }) {
                     <p className="text-muted-foreground text-xs">
                       Remove "Powered by AI Agent" branding from the widget
                     </p>
+                    {org && (!org.subscriptionPlan || org.subscriptionPlan === "free" || org.subscriptionPlan === "hobby") && (
+                      <p className="text-amber-600 dark:text-amber-400 mt-1 text-xs font-medium">
+                        Available on Pro and Business plans only
+                      </p>
+                    )}
                   </div>
                   <button
                     type="button"
-                    onClick={() => setBranding({ ...branding, hideBranding: !branding.hideBranding })}
+                    onClick={() => {
+                      if (org && (org.subscriptionPlan === "free" || org.subscriptionPlan === "hobby" || !org.subscriptionPlan)) return;
+                      setBranding({ ...branding, hideBranding: !branding.hideBranding });
+                    }}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      branding.hideBranding ? "bg-primary" : "bg-muted"
+                      org && (org.subscriptionPlan === "free" || org.subscriptionPlan === "hobby" || !org.subscriptionPlan)
+                        ? "bg-muted cursor-not-allowed opacity-50"
+                        : branding.hideBranding ? "bg-primary" : "bg-muted"
                     }`}
                   >
                     <span

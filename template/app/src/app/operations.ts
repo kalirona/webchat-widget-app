@@ -42,6 +42,15 @@ import {
 import { ensureArgsSchemaOrThrowHttpError } from "../server/validation";
 import * as z from "zod";
 import crypto from "crypto";
+import { encryptSecret, decryptSecret } from "../shared/crypto";
+import {
+  sendNewLeadEmail,
+  sendInvitationEmail,
+  sendWelcomeEmail,
+  sendLimitWarningEmail,
+  sendEscalationEmail,
+} from "./billing/emails";
+import { getPlanLimits, shouldWarnUsage } from "./billing/constants";
 import {
   chunkText,
   extractTextFromBuffer,
@@ -77,24 +86,46 @@ async function getOrCreateUserOrg(userId: string) {
       role: "owner",
     },
   });
+
+  // Send welcome email (non-blocking, first time only)
+  sendWelcomeEmail(userId).catch(() => {});
+
+  return org;
+}
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  const orgName = user?.username
+    ? `${user.username}'s Organization`
+    : "My Organization";
+  const org = await prisma.organization.create({
+    data: { name: orgName },
+  });
+  await prisma.organizationMember.create({
+    data: {
+      organizationId: org.id,
+      userId,
+      role: "owner",
+    },
+  });
   return org;
 }
 
 export const getOrganization: any = async (_args: unknown, context: any) => {
   assertUserAndOrg(context);
   const org = await getOrCreateUserOrg(context.user!.id);
-  const members = await prisma.organizationMember.findMany({
-    where: { organizationId: org.id },
-    include: { user: { select: { id: true, email: true, username: true } } },
-  });
-  const currentMember = members.find((m) => m.userId === context.user!.id);
 
-  // Count conversations this month
+  // Parallelize independent queries
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const conversationsThisMonth = await prisma.conversation.count({
-    where: { organizationId: org.id, createdAt: { gte: monthStart } },
-  });
+  const [members, conversationsThisMonth] = await Promise.all([
+    prisma.organizationMember.findMany({
+      where: { organizationId: org.id },
+      include: { user: { select: { id: true, email: true, username: true } } },
+    }),
+    prisma.conversation.count({
+      where: { organizationId: org.id, createdAt: { gte: monthStart } },
+    }),
+  ]);
+  const currentMember = members.find((m) => m.userId === context.user!.id);
 
   return {
     id: org.id,
@@ -111,6 +142,7 @@ export const getOrganization: any = async (_args: unknown, context: any) => {
     monthlyTokenLimit: org.monthlyTokenLimit,
     monthlyConversationLimit: org.monthlyConversationLimit,
     memberLimit: org.memberLimit,
+    websitesLimit: org.websitesLimit,
     conversationsThisMonth,
     members: members.map((m) => ({
       id: m.user.id,
@@ -158,6 +190,7 @@ const updateOrganizationSchema = z.object({
   branding: z.record(z.unknown()).optional(),
   monthlyConversationLimit: z.number().int().positive().optional().nullable(),
   memberLimit: z.number().int().positive().optional().nullable(),
+  websitesLimit: z.number().int().positive().optional().nullable(),
 });
 
 export const updateOrganization: any = async (rawArgs: unknown, context: any) => {
@@ -189,6 +222,7 @@ export const updateOrganization: any = async (rawArgs: unknown, context: any) =>
   if (data.branding !== undefined) updateData.branding = data.branding;
   if (data.monthlyConversationLimit !== undefined) updateData.monthlyConversationLimit = data.monthlyConversationLimit;
   if (data.memberLimit !== undefined) updateData.memberLimit = data.memberLimit;
+  if (data.websitesLimit !== undefined) updateData.websitesLimit = data.websitesLimit;
 
   const updated = await prisma.organization.update({
     where: { id: org.id },
@@ -207,6 +241,7 @@ export const updateOrganization: any = async (rawArgs: unknown, context: any) =>
     branding: updated.branding,
     monthlyConversationLimit: updated.monthlyConversationLimit,
     memberLimit: updated.memberLimit,
+    websitesLimit: updated.websitesLimit,
   };
 };
 
@@ -234,10 +269,32 @@ export const inviteMember: InviteMember<typeof inviteMemberSchema._type, { id: s
   if (existing) {
     throw new HttpError(409, "User is already a member of this organization");
   }
-  const member = await prisma.organizationMember.create({
-    data: { organizationId: org.id, userId: invitedUser.id, role: "member" },
+
+  // Check member limit
+  const memberLimit = await checkUsageLimits(org.id, "member");
+  if (!memberLimit.allowed) {
+    throw new HttpError(400, `Member limit reached (${memberLimit.limit}). Upgrade your plan to add more members.`);
+  }
+
+  const token = crypto.randomBytes(32).toString("hex");
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + 7);
+
+  const invitation = await prisma.invitation.create({
+    data: {
+      email,
+      token,
+      role: "member",
+      expiresAt,
+      organizationId: org.id,
+      invitedById: context.user!.id,
+    },
   });
-  return { id: invitedUser.id, email: invitedUser.email!, username: invitedUser.username, role: member.role };
+
+  // Send invitation email (non-blocking)
+  sendInvitationEmail(context.user!.id, org.id, email, token);
+
+  return { id: invitation.id, email: invitation.email, token: invitation.token, role: invitation.role };
 };
 
 const removeMemberSchema = z.object({
@@ -437,31 +494,34 @@ export const updateAgent: UpdateAgent<typeof updateAgentSchema._type, {
   assertUserAndOrg(context);
   const { id, ...data } = ensureArgsSchemaOrThrowHttpError(updateAgentSchema, rawArgs);
   const org = await getOrCreateUserOrg(context.user!.id);
-  const existingAgent = await prisma.agent.findFirst({
-    where: { id, organizationId: org.id },
-  });
-  if (!existingAgent) throw new HttpError(404, "Agent not found");
+  const result = await prisma.$transaction(async (tx) => {
+    const existingAgent = await tx.agent.findFirst({
+      where: { id, organizationId: org.id },
+    });
+    if (!existingAgent) throw new HttpError(404, "Agent not found");
 
-  const agent = await prisma.agent.update({ where: { id }, data });
+    const agent = await tx.agent.update({ where: { id }, data });
 
-  // Log audit event
-  const changedFields = Object.keys(data).filter((key) => {
-    const k = key as keyof typeof data;
-    return data[k] !== undefined && data[k] !== existingAgent[k as keyof typeof existingAgent];
+    const changedFields = Object.keys(data).filter((key) => {
+      const k = key as keyof typeof data;
+      return data[k] !== undefined && data[k] !== existingAgent[k as keyof typeof existingAgent];
+    });
+    if (changedFields.length > 0) {
+      await logAuditEvent(org.id, context.user!.id, "agent.updated", {
+        agentName: agent.name,
+        agentId: id,
+        changedFields,
+      }, context);
+    }
+
+    return agent;
   });
-  if (changedFields.length > 0) {
-    await logAuditEvent(org.id, context.user!.id, "agent.updated", {
-      agentName: agent.name,
-      agentId: id,
-      changedFields,
-    }, context);
-  }
 
   return {
-    id: agent.id, name: agent.name, description: agent.description,
-    model: agent.model, systemPrompt: agent.systemPrompt,
-    welcomeMessage: agent.welcomeMessage, temperature: agent.temperature,
-    status: agent.status,
+    id: result.id, name: result.name, description: result.description,
+    model: result.model, systemPrompt: result.systemPrompt,
+    welcomeMessage: result.welcomeMessage, temperature: result.temperature,
+    status: result.status,
   };
 };
 
@@ -480,13 +540,13 @@ export const deleteAgent: DeleteAgent<typeof deleteAgentSchema._type, void> = as
 
   // Unlink websites
   await prisma.website.updateMany({
-    where: { agentId: id },
+    where: { agentId: id, organizationId: org.id },
     data: { agentId: null },
   });
 
   // Unlink conversations
   await prisma.conversation.updateMany({
-    where: { agentId: id },
+    where: { agentId: id, organizationId: org.id },
     data: { agentId: null },
   });
 
@@ -495,7 +555,7 @@ export const deleteAgent: DeleteAgent<typeof deleteAgentSchema._type, void> = as
     where: { agentId: id },
   });
 
-  // Delete the agent
+  // Delete the agent (org already verified by findFirst above)
   await prisma.agent.delete({ where: { id } });
 
   // Log audit event
@@ -613,21 +673,23 @@ export const updateWebsite: UpdateWebsite<typeof updateWebsiteSchema._type, { id
   assertUserAndOrg(context);
   const { id, ...data } = ensureArgsSchemaOrThrowHttpError(updateWebsiteSchema, rawArgs);
   const org = await getOrCreateUserOrg(context.user!.id);
-  await prisma.website.findFirstOrThrow({
-    where: { id, organizationId: org.id },
-  });
-  if (data.agentId) {
-    await prisma.agent.findFirstOrThrow({
-      where: { id: data.agentId, organizationId: org.id },
+  const website = await prisma.$transaction(async (tx) => {
+    await tx.website.findFirstOrThrow({
+      where: { id, organizationId: org.id },
     });
-  }
-  if (data.logoUrl !== undefined) {
-    data.logoUrl = data.logoUrl || null;
-  }
-  if (data.widgetAvatarUrl !== undefined) {
-    data.widgetAvatarUrl = data.widgetAvatarUrl || null;
-  }
-  const website = await prisma.website.update({ where: { id }, data });
+    if (data.agentId) {
+      await tx.agent.findFirstOrThrow({
+        where: { id: data.agentId, organizationId: org.id },
+      });
+    }
+    if (data.logoUrl !== undefined) {
+      data.logoUrl = data.logoUrl || null;
+    }
+    if (data.widgetAvatarUrl !== undefined) {
+      data.widgetAvatarUrl = data.widgetAvatarUrl || null;
+    }
+    return tx.website.update({ where: { id }, data });
+  });
   return { id: website.id, url: website.url, name: website.name, logoUrl: website.logoUrl, status: website.status, widgetColor: website.widgetColor, widgetPosition: website.widgetPosition, widgetTitle: website.widgetTitle, widgetAvatarUrl: website.widgetAvatarUrl, allowedDomains: website.allowedDomains, widgetWelcomeMessage: website.widgetWelcomeMessage ?? "" };
 };
 
@@ -644,7 +706,7 @@ export const deleteWebsite: DeleteWebsite<typeof deleteWebsiteSchema._type, void
   });
   if (!website) throw new HttpError(404, "Website not found");
   await prisma.conversation.updateMany({
-    where: { websiteId: id },
+    where: { websiteId: id, organizationId: org.id },
     data: { websiteId: null },
   });
   await prisma.website.delete({ where: { id } });
@@ -699,6 +761,353 @@ export const getConversationMessages: GetConversationMessages<typeof getConversa
   }));
 };
 
+// --- Conversation Inbox (Phase 17) ---
+
+const getConversationsInboxSchema = z.object({
+  search: z.string().optional(),
+  status: z.enum(["all", "bot", "human", "escalated", "resolved", "unresolved"]).optional(),
+  agentId: z.string().optional(),
+  skip: z.number().int().min(0).optional(),
+  pageSize: z.number().int().min(1).max(100).optional(),
+});
+
+export const getConversationsInbox: any = async (rawArgs: unknown, context: any) => {
+  assertUserAndOrg(context);
+  const { search, status = "all", agentId, skip = 0, pageSize = 25 } = ensureArgsSchemaOrThrowHttpError(getConversationsInboxSchema, rawArgs);
+  const org = await getOrCreateUserOrg(context.user!.id);
+
+  const where: any = { organizationId: org.id };
+
+  // Filter by status
+  if (status === "unresolved") {
+    where.status = { not: "resolved" };
+  } else if (status !== "all") {
+    where.status = status;
+  }
+
+  // Filter by agent
+  if (agentId) {
+    where.agentId = agentId;
+  }
+
+  // Search in visitor info or lead info
+  if (search) {
+    where.OR = [
+      { visitor: { email: { contains: search, mode: "insensitive" } } },
+      { visitor: { name: { contains: search, mode: "insensitive" } } },
+      { lead: { email: { contains: search, mode: "insensitive" } } },
+      { lead: { name: { contains: search, mode: "insensitive" } } },
+      { messages: { some: { content: { contains: search, mode: "insensitive" } } } },
+    ];
+  }
+
+  const [conversations, total] = await Promise.all([
+    prisma.conversation.findMany({
+      where,
+      include: {
+        _count: { select: { messages: true } },
+        lead: { select: { email: true, name: true, status: true } },
+        agent: { select: { name: true } },
+        website: { select: { name: true } },
+        visitor: { select: { email: true, name: true, pageUrl: true } },
+      },
+      orderBy: { lastMessageAt: "desc", createdAt: "desc" },
+      skip,
+      take: pageSize,
+    }),
+    prisma.conversation.count({ where }),
+  ]);
+
+  // Get last message for each conversation
+  const conversationIds = conversations.map((c) => c.id);
+  const lastMessages = await prisma.message.findMany({
+    where: { conversationId: { in: conversationIds } },
+    orderBy: { createdAt: "desc" },
+    distinct: ["conversationId"],
+    select: { conversationId: true, content: true, role: true, createdAt: true },
+  });
+  const lastMessageMap = new Map(lastMessages.map((m) => [m.conversationId, m]));
+
+  return {
+    conversations: conversations.map((c) => ({
+      id: c.id,
+      status: c.status,
+      createdAt: c.createdAt,
+      lastMessageAt: c.lastMessageAt,
+      messageCount: c._count.messages,
+      leadEmail: c.lead?.email ?? c.visitor?.email ?? null,
+      leadName: c.lead?.name ?? c.visitor?.name ?? null,
+      leadStatus: c.lead?.status ?? null,
+      agentName: c.agent?.name ?? null,
+      websiteName: c.website?.name ?? null,
+      lastMessage: lastMessageMap.get(c.id) ? {
+        content: lastMessageMap.get(c.id)!.content,
+        role: lastMessageMap.get(c.id)!.role,
+        createdAt: lastMessageMap.get(c.id)!.createdAt,
+      } : null,
+      resolvedAt: c.resolvedAt,
+    })),
+    total,
+    totalPages: Math.ceil(total / pageSize),
+  };
+};
+
+const getConversationDetailSchema = z.object({
+  id: z.string(),
+});
+
+export const getConversationDetail: any = async (rawArgs: unknown, context: any) => {
+  assertUserAndOrg(context);
+  const { id } = ensureArgsSchemaOrThrowHttpError(getConversationDetailSchema, rawArgs);
+  const org = await getOrCreateUserOrg(context.user!.id);
+
+  const conversation = await prisma.conversation.findFirst({
+    where: { id, organizationId: org.id },
+    include: {
+      messages: { orderBy: { createdAt: "asc" } },
+      lead: true,
+      agent: { select: { id: true, name: true } },
+      website: { select: { id: true, name: true, url: true } },
+      visitor: true,
+    },
+  });
+  if (!conversation) throw new HttpError(404, "Conversation not found");
+
+  // Get all conversations from the same visitor (for history)
+  let visitorConversations: any[] = [];
+  if (conversation.visitorId) {
+    visitorConversations = await prisma.conversation.findMany({
+      where: {
+        visitorId: conversation.visitorId,
+        id: { not: id },
+        organizationId: org.id,
+      },
+      include: { _count: { select: { messages: true } } },
+      orderBy: { createdAt: "desc" },
+      take: 10,
+    });
+  }
+
+  return {
+    id: conversation.id,
+    status: conversation.status,
+    createdAt: conversation.createdAt,
+    lastMessageAt: conversation.lastMessageAt,
+    resolvedAt: conversation.resolvedAt,
+    messages: conversation.messages.map((m) => ({
+      id: m.id,
+      content: m.content,
+      role: m.role,
+      status: m.status,
+      source: m.source,
+      model: m.model,
+      tokens: m.tokens,
+      cost: m.cost,
+      createdAt: m.createdAt,
+    })),
+    lead: conversation.lead ? {
+      id: conversation.lead.id,
+      email: conversation.lead.email,
+      name: conversation.lead.name,
+      phone: conversation.lead.phone,
+      status: conversation.lead.status,
+    } : null,
+    agent: conversation.agent,
+    website: conversation.website,
+    visitor: conversation.visitor ? {
+      id: conversation.visitor.id,
+      email: conversation.visitor.email,
+      name: conversation.visitor.name,
+      pageUrl: conversation.visitor.pageUrl,
+      userAgent: conversation.visitor.userAgent,
+      lastSeenAt: conversation.visitor.lastSeenAt,
+    } : null,
+    visitorHistory: visitorConversations.map((c) => ({
+      id: c.id,
+      createdAt: c.createdAt,
+      status: c.status,
+      lastMessageAt: c.lastMessageAt,
+      messageCount: c._count.messages,
+    })),
+  };
+};
+
+const resolveConversationSchema = z.object({
+  id: z.string(),
+});
+
+export const resolveConversation: any = async (rawArgs: unknown, context: any) => {
+  assertUserAndOrg(context);
+  const { id } = ensureArgsSchemaOrThrowHttpError(resolveConversationSchema, rawArgs);
+  const org = await getOrCreateUserOrg(context.user!.id);
+
+  const conversation = await prisma.conversation.findFirst({
+    where: { id, organizationId: org.id },
+  });
+  if (!conversation) throw new HttpError(404, "Conversation not found");
+
+  const updated = await prisma.conversation.update({
+    where: { id },
+    data: { status: "resolved", resolvedAt: new Date() },
+  });
+
+  return { id: updated.id, status: updated.status, resolvedAt: updated.resolvedAt };
+};
+
+const assignConversationSchema = z.object({
+  id: z.string(),
+  userId: z.string().optional(),
+});
+
+export const assignConversation: any = async (rawArgs: unknown, context: any) => {
+  assertUserAndOrg(context);
+  const { id, userId } = ensureArgsSchemaOrThrowHttpError(assignConversationSchema, rawArgs);
+  const org = await getOrCreateUserOrg(context.user!.id);
+
+  const conversation = await prisma.conversation.findFirst({
+    where: { id, organizationId: org.id },
+  });
+  if (!conversation) throw new HttpError(404, "Conversation not found");
+
+  // If userId provided, verify they're a member
+  if (userId) {
+    const member = await prisma.organizationMember.findFirst({
+      where: { organizationId: org.id, userId },
+    });
+    if (!member) throw new HttpError(404, "User not found in organization");
+  }
+
+  const updated = await prisma.conversation.update({
+    where: { id },
+    data: {
+      assignedToId: userId ?? context.user!.id,
+      status: userId ? "human" : "bot",
+    },
+  });
+
+  return { id: updated.id, status: updated.status, assignedToId: updated.assignedToId };
+};
+
+const escalateConversationSchema = z.object({
+  id: z.string(),
+  reason: z.string().max(500).optional(),
+});
+
+export const escalateConversation: any = async (rawArgs: unknown, context: any) => {
+  assertUserAndOrg(context);
+  const { id, reason } = ensureArgsSchemaOrThrowHttpError(escalateConversationSchema, rawArgs);
+  const org = await getOrCreateUserOrg(context.user!.id);
+
+  const conversation = await prisma.conversation.findFirst({
+    where: { id, organizationId: org.id },
+  });
+  if (!conversation) throw new HttpError(404, "Conversation not found");
+
+  const updated = await prisma.conversation.update({
+    where: { id },
+    data: { status: "escalated" },
+  });
+
+  // Add system message about escalation
+  await prisma.message.create({
+    data: {
+      content: `Conversation escalated to human support${reason ? `: ${reason}` : ""}`,
+      role: "system",
+      source: "widget",
+      conversationId: id,
+    },
+  });
+
+  // Send email notification to org members
+  sendEscalationEmail(org.id, conversation, reason).catch(() => {});
+
+  return { id: updated.id, status: updated.status };
+};
+
+// --- Live Agent Reply ---
+
+const sendAgentMessageSchema = z.object({
+  conversationId: z.string(),
+  content: z.string().min(1).max(10000),
+});
+
+export const sendAgentMessage: any = async (rawArgs: unknown, context: any) => {
+  assertUserAndOrg(context);
+  const { conversationId, content } = ensureArgsSchemaOrThrowHttpError(sendAgentMessageSchema, rawArgs);
+  const org = await getOrCreateUserOrg(context.user!.id);
+
+  const conversation = await prisma.conversation.findFirst({
+    where: { id: conversationId, organizationId: org.id },
+  });
+  if (!conversation) throw new HttpError(404, "Conversation not found");
+
+  const msg = await prisma.message.create({
+    data: {
+      content: content.trim(),
+      role: "assistant",
+      source: "dashboard",
+      status: "completed",
+      conversationId,
+    },
+  });
+
+  // Update conversation: set status to human, bump lastMessageAt
+  await prisma.conversation.update({
+    where: { id: conversationId },
+    data: {
+      status: "human",
+      lastMessageAt: new Date(),
+      assignedToId: context.user!.id,
+    },
+  });
+
+  return {
+    id: msg.id,
+    content: msg.content,
+    role: msg.role,
+    createdAt: msg.createdAt.toISOString(),
+  };
+};
+
+const setAgentTypingSchema = z.object({
+  conversationId: z.string(),
+  isTyping: z.boolean(),
+});
+
+// In-memory typing store (per-org, per-conversation)
+const typingStore = new Map<string, { isTyping: boolean; expiresAt: number }>();
+
+export const setAgentTyping: any = async (rawArgs: unknown, context: any) => {
+  assertUserAndOrg(context);
+  const { conversationId, isTyping } = ensureArgsSchemaOrThrowHttpError(setAgentTypingSchema, rawArgs);
+  const org = await getOrCreateUserOrg(context.user!.id);
+
+  const conversation = await prisma.conversation.findFirst({
+    where: { id: conversationId, organizationId: org.id },
+  });
+  if (!conversation) throw new HttpError(404, "Conversation not found");
+
+  const key = `${org.id}:${conversationId}`;
+  if (isTyping) {
+    typingStore.set(key, { isTyping: true, expiresAt: Date.now() + 15000 });
+  } else {
+    typingStore.delete(key);
+  }
+
+  return { isTyping };
+};
+
+export function isAgentTyping(organizationId: string, conversationId: string): boolean {
+  const key = `${organizationId}:${conversationId}`;
+  const entry = typingStore.get(key);
+  if (!entry) return false;
+  if (Date.now() > entry.expiresAt) {
+    typingStore.delete(key);
+    return false;
+  }
+  return true;
+}
+
 export const getLeads: GetLeads<void, { id: string; email: string | null; name: string | null; phone: string | null; status: string; notes: string | null; createdAt: Date; sourceWebsiteId: string | null; sourceWebsiteName: string | null; conversations: { id: string; createdAt: Date; messageCount: number }[] }[]> = async (_args, context) => {
   assertUserAndOrg(context);
   const org = await getOrCreateUserOrg(context.user!.id);
@@ -745,17 +1154,20 @@ export const updateLead: UpdateLead<typeof updateLeadSchema._type, { id: string;
   const args = ensureArgsSchemaOrThrowHttpError(updateLeadSchema, rawArgs);
   const { id, ...data } = args;
   const org = await getOrCreateUserOrg(context.user!.id);
-  const lead = await prisma.lead.findFirst({
-    where: { id, organizationId: org.id },
-  });
-  if (!lead) return null;
   const updateData: Record<string, unknown> = {};
   if (data.name !== undefined) updateData.name = data.name || null;
   if (data.email !== undefined) updateData.email = data.email || null;
   if (data.phone !== undefined) updateData.phone = data.phone || null;
   if (data.status !== undefined) updateData.status = data.status;
   if (data.notes !== undefined) updateData.notes = data.notes || null;
-  const updated = await prisma.lead.update({ where: { id }, data: updateData });
+  const updated = await prisma.$transaction(async (tx) => {
+    const lead = await tx.lead.findFirst({
+      where: { id, organizationId: org.id },
+    });
+    if (!lead) return null;
+    return tx.lead.update({ where: { id }, data: updateData });
+  });
+  if (!updated) return null;
   return { id: updated.id, email: updated.email, name: updated.name, phone: updated.phone, status: updated.status, notes: updated.notes };
 };
 
@@ -772,10 +1184,53 @@ export const deleteLead: DeleteLead<typeof deleteLeadSchema._type, void> = async
   });
   if (!lead) throw new HttpError(404, "Lead not found");
   await prisma.conversation.updateMany({
-    where: { leadId: id },
+    where: { leadId: id, organizationId: org.id },
     data: { leadId: null },
   });
   await prisma.lead.delete({ where: { id } });
+};
+
+const createLeadSchema = z.object({
+  name: z.string().max(100).optional(),
+  email: z.string().email().optional(),
+  phone: z.string().max(30).optional(),
+  notes: z.string().max(1000).optional(),
+  sourceWebsiteId: z.string().optional(),
+});
+
+export const createLead: any = async (rawArgs: unknown, context: any) => {
+  assertUserAndOrg(context);
+  const args = ensureArgsSchemaOrThrowHttpError(createLeadSchema, rawArgs);
+  const org = await getOrCreateUserOrg(context.user!.id);
+
+  const lead = await prisma.lead.create({
+    data: {
+      name: args.name || null,
+      email: args.email || null,
+      phone: args.phone || null,
+      notes: args.notes || null,
+      sourceWebsiteId: args.sourceWebsiteId || null,
+      organizationId: org.id,
+    },
+  });
+
+  // Send new lead email notification (non-blocking)
+  let websiteName = "Direct";
+  if (args.sourceWebsiteId) {
+    const website = await prisma.website.findUnique({ where: { id: args.sourceWebsiteId } });
+    if (website) websiteName = website.name;
+  }
+  sendNewLeadEmail(org.id, lead, websiteName, args.notes || args.name || "New lead captured");
+
+  return {
+    id: lead.id,
+    email: lead.email,
+    name: lead.name,
+    phone: lead.phone,
+    status: lead.status,
+    notes: lead.notes,
+    sourceWebsiteId: lead.sourceWebsiteId,
+  };
 };
 
 export const getDashboardStats: GetDashboardStats<void, { totalAgents: number; activeAgents: number; totalWebsites: number; totalConversations: number; totalLeads: number; newLeads: number; recentConversations: { id: string; visitorId: string | null; createdAt: Date; leadName: string | null }[] }> = async (_args, context) => {
@@ -1108,9 +1563,108 @@ export const uploadKnowledgeDocument: UploadKnowledgeDocument<typeof uploadKnowl
 
 const crawlUrlSchema = z.object({
   knowledgeBaseId: z.string(),
-  url: z.string().min(1),
+  url: z.string().url().refine(
+    (u) => u.startsWith("http://") || u.startsWith("https://"),
+    { message: "Only http and https URLs are allowed" }
+  ),
   isSitemap: z.boolean().optional(),
 });
+
+const MAX_CRAWL_TIMEOUT_MS = 15000;
+const MAX_CRAWL_RESPONSE_BYTES = 5 * 1024 * 1024; // 5MB
+const MAX_SITEMAP_URLS = 50;
+
+function isPrivateIP(hostname: string): boolean {
+  // IPv4 private/reserved ranges
+  const ipv4Patterns = [
+    /^10\./,
+    /^172\.(1[6-9]|2\d|3[01])\./,
+    /^192\.168\./,
+    /^127\./,
+    /^0\./,
+    /^169\.254\./,
+    /^192\.0\.0\./,
+    /^192\.0\.2\./,
+    /^192\.88\.99\./,
+    /^198\.18\./,
+    /^198\.19\./,
+    /^198\.51\.100\./,
+    /^203\.0\.113\./,
+    /^224\./,
+    /^225\./,
+    /^226\./,
+    /^227\./,
+    /^228\./,
+    /^229\./,
+    /^230\./,
+    /^231\./,
+    /^232\./,
+    /^233\./,
+    /^234\./,
+    /^235\./,
+    /^236\./,
+    /^237\./,
+    /^238\./,
+    /^239\./,
+    /^240\./,
+    /^255\./,
+  ];
+  if (ipv4Patterns.some((p) => p.test(hostname))) return true;
+
+  // IPv6 private/reserved
+  if (hostname === "::1" || hostname === "::" || hostname.startsWith("fc") || hostname.startsWith("fd") || hostname.startsWith("fe80")) return true;
+
+  // Localhost aliases
+  if (hostname === "localhost" || hostname.endsWith(".localhost")) return true;
+
+  return false;
+}
+
+function validateCrawlUrl(urlString: string): void {
+  let parsed: URL;
+  try {
+    parsed = new URL(urlString);
+  } catch {
+    throw new HttpError(400, "Invalid URL format");
+  }
+
+  if (!["http:", "https:"].includes(parsed.protocol)) {
+    throw new HttpError(400, "Only HTTP and HTTPS URLs are allowed");
+  }
+
+  if (isPrivateIP(parsed.hostname)) {
+    throw new HttpError(400, "Internal/private URLs are not allowed");
+  }
+}
+
+async function safeFetch(url: string, maxBytes: number = MAX_CRAWL_RESPONSE_BYTES): Promise<Response> {
+  validateCrawlUrl(url);
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), MAX_CRAWL_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(url, {
+      signal: controller.signal,
+      redirect: "follow",
+      headers: { "User-Agent": "OpenSaaS-KnowledgeBot/1.0" },
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    // Enforce response size limit
+    const contentLength = response.headers.get("content-length");
+    if (contentLength && parseInt(contentLength, 10) > maxBytes) {
+      throw new Error("Response too large");
+    }
+
+    return response;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
 
 export const crawlUrl: CrawlUrl<typeof crawlUrlSchema._type, { id: string; title: string; status: string; chunkCount: number }> = async (rawArgs, context) => {
   assertUserAndOrg(context);
@@ -1128,11 +1682,17 @@ export const crawlUrl: CrawlUrl<typeof crawlUrlSchema._type, { id: string; title
   try {
     let allText = "";
     for (const pageUrl of urlsToCrawl) {
-      const response = await fetch(pageUrl);
-      if (!response.ok) continue;
-      const html = await response.text();
-      const text = await extractHtmlText(html);
-      allText += `\n\n--- Page: ${pageUrl} ---\n\n${text}`;
+      try {
+        validateCrawlUrl(pageUrl);
+        const response = await safeFetch(pageUrl);
+        const html = await response.text();
+        const text = await extractHtmlText(html);
+        allText += `\n\n--- Page: ${pageUrl} ---\n\n${text}`;
+      } catch (fetchErr) {
+        // Skip individual URL failures in sitemap mode
+        if (isSitemap) continue;
+        throw fetchErr;
+      }
     }
     if (!allText.trim()) throw new Error("No content could be extracted from the URL(s)");
     const chunks = chunkText(allText);
@@ -1158,16 +1718,26 @@ export const crawlUrl: CrawlUrl<typeof crawlUrlSchema._type, { id: string; title
 };
 
 async function parseSitemapUrls(sitemapUrl: string): Promise<string[]> {
-  const response = await fetch(sitemapUrl);
-  if (!response.ok) throw new Error(`Failed to fetch sitemap: ${response.statusText}`);
+  validateCrawlUrl(sitemapUrl);
+  const response = await safeFetch(sitemapUrl, 2 * 1024 * 1024); // 2MB max for sitemaps
   const xml = await response.text();
   const urls: string[] = [];
   const locRegex = /<loc>([^<]+)<\/loc>/gi;
   let match;
   while ((match = locRegex.exec(xml)) !== null) {
-    urls.push(match[1].trim());
+    const url = match[1].trim();
+    // Validate each extracted URL
+    try {
+      const parsed = new URL(url);
+      if (["http:", "https:"].includes(parsed.protocol) && !isPrivateIP(parsed.hostname)) {
+        urls.push(url);
+      }
+    } catch {
+      // Skip invalid URLs
+    }
+    if (urls.length >= MAX_SITEMAP_URLS) break;
   }
-  if (urls.length === 0) throw new Error("No URLs found in sitemap");
+  if (urls.length === 0) throw new Error("No valid URLs found in sitemap");
   return urls;
 }
 
@@ -1182,6 +1752,116 @@ export const deleteKnowledgeDocument: DeleteKnowledgeDocument<typeof deleteKnowl
   if (doc.knowledgeBase.organizationId !== org.id) throw new HttpError(403, "Forbidden");
   await prisma.documentChunk.deleteMany({ where: { documentId: id } });
   await prisma.knowledgeDocument.delete({ where: { id } });
+};
+
+// --- Website Auto-Crawler ---
+
+const DEFAULT_CRAWL_PATHS = [
+  "",
+  "/about",
+  "/about-us",
+  "/faq",
+  "/help",
+  "/services",
+  "/pricing",
+  "/contact",
+  "/contact-us",
+];
+
+const crawlWebsiteSchema = z.object({
+  knowledgeBaseId: z.string(),
+  baseUrl: z.string().url(),
+  paths: z.array(z.string()).optional(),
+  customPaths: z.array(z.string()).optional(),
+});
+
+export const crawlWebsite: any = async (rawArgs: unknown, context: any) => {
+  assertUserAndOrg(context);
+  const { knowledgeBaseId, baseUrl, paths, customPaths } = ensureArgsSchemaOrThrowHttpError(crawlWebsiteSchema, rawArgs);
+  const org = await getOrCreateUserOrg(context.user!.id);
+  const kb = await prisma.knowledgeBase.findFirst({ where: { id: knowledgeBaseId, organizationId: org.id } });
+  if (!kb) throw new HttpError(404, "Knowledge base not found");
+
+  // Build the list of paths to crawl
+  const crawlPaths = paths ?? DEFAULT_CRAWL_PATHS;
+  const allPaths = [...crawlPaths, ...(customPaths ?? [])];
+  const base = new URL(baseUrl);
+  const urlsToCrawl = allPaths.map((p) => {
+    if (p.startsWith("http")) return p;
+    return `${base.origin}${p.startsWith("/") ? p : "/" + p}`;
+  });
+
+  // Create a single document per crawl session
+  const doc = await prisma.knowledgeDocument.create({
+    data: {
+      title: `Website crawl: ${baseUrl}`,
+      sourceType: "crawl",
+      sourceUrl: baseUrl,
+      fileType: "html",
+      status: "processing",
+      knowledgeBaseId,
+    },
+  });
+
+  try {
+    let allText = "";
+    let pagesCrawled = 0;
+    let pagesFailed = 0;
+
+    for (const pageUrl of urlsToCrawl) {
+      try {
+        validateCrawlUrl(pageUrl);
+        const response = await safeFetch(pageUrl);
+        const html = await response.text();
+        const text = await extractHtmlText(html);
+        if (text.trim().length > 50) {
+          allText += `\n\n--- Page: ${pageUrl} ---\n\n${text}`;
+          pagesCrawled++;
+        }
+      } catch {
+        pagesFailed++;
+        continue;
+      }
+    }
+
+    if (!allText.trim()) {
+      throw new Error("No content could be extracted from any pages");
+    }
+
+    const chunks = chunkText(allText);
+    await prisma.documentChunk.createMany({
+      data: chunks.map((content, i) => ({
+        documentId: doc.id,
+        content,
+        index: i,
+      })),
+    });
+
+    const updated = await prisma.knowledgeDocument.update({
+      where: { id: doc.id },
+      data: {
+        status: "ready",
+        chunkCount: chunks.length,
+        errorMessage: pagesFailed > 0 ? `${pagesFailed} pages failed` : null,
+      },
+    });
+
+    return {
+      id: updated.id,
+      title: updated.title,
+      status: updated.status,
+      chunkCount: updated.chunkCount,
+      pagesCrawled,
+      pagesFailed,
+      totalPages: urlsToCrawl.length,
+    };
+  } catch (err) {
+    await prisma.knowledgeDocument.update({
+      where: { id: doc.id },
+      data: { status: "error", errorMessage: (err as Error).message },
+    });
+    throw new HttpError(500, `Crawl failed: ${(err as Error).message}`);
+  }
 };
 
 // --- Custom Text Entry ---
@@ -1285,8 +1965,8 @@ export const updateAiSettings: any = async (rawArgs: unknown, context: any) => {
   const updateData: Record<string, unknown> = {};
   if (data.aiProvider !== undefined) updateData.aiProvider = data.aiProvider;
   if (data.aiModel !== undefined) updateData.aiModel = data.aiModel;
-  if (data.openaiApiKey !== undefined) updateData.openaiApiKey = data.openaiApiKey;
-  if (data.geminiApiKey !== undefined) updateData.geminiApiKey = data.geminiApiKey;
+  if (data.openaiApiKey !== undefined) updateData.openaiApiKey = data.openaiApiKey ? encryptSecret(data.openaiApiKey) : null;
+  if (data.geminiApiKey !== undefined) updateData.geminiApiKey = data.geminiApiKey ? encryptSecret(data.geminiApiKey) : null;
   if (data.monthlyTokenLimit !== undefined) updateData.monthlyTokenLimit = data.monthlyTokenLimit;
 
   await prisma.organization.update({ where: { id: org.id }, data: updateData });
@@ -1301,8 +1981,8 @@ export const getAiSettings: any = async (_args: unknown, context: any) => {
   return {
     aiProvider: org.aiProvider,
     aiModel: org.aiModel,
-    openaiApiKey: org.openaiApiKey ? "••••••••" + org.openaiApiKey.slice(-4) : null,
-    geminiApiKey: org.geminiApiKey ? "••••••••" + org.geminiApiKey.slice(-4) : null,
+    openaiApiKey: org.openaiApiKey ? "••••••••" + decryptSecret(org.openaiApiKey).slice(-4) : null,
+    geminiApiKey: org.geminiApiKey ? "••••••••" + decryptSecret(org.geminiApiKey).slice(-4) : null,
     monthlyTokenLimit: org.monthlyTokenLimit,
   };
 };
@@ -1320,19 +2000,23 @@ export const getAiUsage: any = async (rawArgs: unknown, context: any) => {
   since.setDate(since.getDate() - (days ?? 30));
   since.setHours(0, 0, 0, 0);
 
-  const usage = await prisma.aiUsage.findMany({
-    where: { organizationId: org.id, date: { gte: since } },
-    orderBy: { date: "asc" },
-  });
-
-  const totals = usage.reduce(
-    (acc, curr) => ({
-      promptTokens: acc.promptTokens + curr.promptTokens,
-      completionTokens: acc.completionTokens + curr.completionTokens,
-      cost: acc.cost + curr.cost,
+  // Parallelize daily fetch and aggregate totals
+  const [usage, aggResult] = await Promise.all([
+    prisma.aiUsage.findMany({
+      where: { organizationId: org.id, date: { gte: since } },
+      orderBy: { date: "asc" },
     }),
-    { promptTokens: 0, completionTokens: 0, cost: 0 },
-  );
+    prisma.aiUsage.aggregate({
+      where: { organizationId: org.id, date: { gte: since } },
+      _sum: { promptTokens: true, completionTokens: true, cost: true },
+    }),
+  ]);
+
+  const totals = {
+    promptTokens: aggResult._sum.promptTokens ?? 0,
+    completionTokens: aggResult._sum.completionTokens ?? 0,
+    cost: aggResult._sum.cost ?? 0,
+  };
 
   return {
     daily: usage,
@@ -1627,7 +2311,7 @@ export async function checkUsageLimits(
 
   switch (type) {
     case "website": {
-      const limit = org.memberLimit ?? 10;
+      const limit = org.websitesLimit ?? 1;
       const websiteCount = await prisma.website.count({ where: { organizationId } });
       return { allowed: websiteCount < limit, current: websiteCount, limit };
     }
@@ -1660,3 +2344,138 @@ export async function checkUsageLimits(
       return { allowed: true };
   }
 }
+
+// --- Usage Quota Dashboard ---
+
+export const getUsageQuota: any = async (_args: unknown, context: any) => {
+  assertUserAndOrg(context);
+  const org = await getOrCreateUserOrg(context.user!.id);
+
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  const [
+    websiteCount,
+    memberCount,
+    monthConversationCount,
+    tokenUsage,
+  ] = await Promise.all([
+    prisma.website.count({ where: { organizationId: org.id } }),
+    prisma.organizationMember.count({ where: { organizationId: org.id } }),
+    prisma.conversation.count({
+      where: { organizationId: org.id, createdAt: { gte: monthStart } },
+    }),
+    prisma.aiUsage.aggregate({
+      where: { organizationId: org.id, date: { gte: monthStart } },
+      _sum: { promptTokens: true, completionTokens: true, cost: true },
+    }),
+  ]);
+
+  const monthTokens = (tokenUsage._sum.promptTokens ?? 0) + (tokenUsage._sum.completionTokens ?? 0);
+  const monthCost = tokenUsage._sum.cost ?? 0;
+
+  const websitesLimit = org.websitesLimit ?? 1;
+  const conversationsLimit = org.monthlyConversationLimit ?? 1000;
+  const tokensLimit = org.monthlyTokenLimit ?? 100000;
+  const membersLimit = org.memberLimit ?? 10;
+
+  return {
+    plan: org.subscriptionPlan || "free",
+    websites: { current: websiteCount, limit: websitesLimit, percent: websitesLimit === Infinity ? 0 : Math.round((websiteCount / websitesLimit) * 100) },
+    conversations: { current: monthConversationCount, limit: conversationsLimit, percent: conversationsLimit === Infinity ? 0 : Math.round((monthConversationCount / conversationsLimit) * 100) },
+    tokens: { current: monthTokens, limit: tokensLimit, percent: tokensLimit === Infinity ? 0 : Math.round((monthTokens / tokensLimit) * 100) },
+    members: { current: memberCount, limit: membersLimit, percent: membersLimit === Infinity ? 0 : Math.round((memberCount / membersLimit) * 100) },
+    cost: { current: monthCost },
+  };
+};
+
+// --- Proactive Triggers ---
+
+const getTriggersSchema = z.object({
+  websiteId: z.string(),
+});
+
+export const getTriggers: any = async (rawArgs: unknown, context: any) => {
+  assertUserAndOrg(context);
+  const { websiteId } = ensureArgsSchemaOrThrowHttpError(getTriggersSchema, rawArgs);
+  const org = await getOrCreateUserOrg(context.user!.id);
+  const website = await prisma.website.findFirst({ where: { id: websiteId, organizationId: org.id } });
+  if (!website) throw new HttpError(404, "Website not found");
+  return prisma.trigger.findMany({ where: { websiteId }, orderBy: { createdAt: "asc" } });
+};
+
+const createTriggerSchema = z.object({
+  websiteId: z.string(),
+  name: z.string().min(1).max(100),
+  type: z.enum(["time_on_page", "scroll_depth", "exit_intent", "page_visit"]),
+  config: z.record(z.unknown()).optional(),
+  message: z.string().min(1).max(500),
+  enabled: z.boolean().optional(),
+  agentId: z.string().optional(),
+});
+
+export const createTrigger: any = async (rawArgs: unknown, context: any) => {
+  assertUserAndOrg(context);
+  const args = ensureArgsSchemaOrThrowHttpError(createTriggerSchema, rawArgs);
+  const org = await getOrCreateUserOrg(context.user!.id);
+  const website = await prisma.website.findFirst({ where: { id: args.websiteId, organizationId: org.id } });
+  if (!website) throw new HttpError(404, "Website not found");
+
+  if (args.agentId) {
+    const agent = await prisma.agent.findFirst({ where: { id: args.agentId, organizationId: org.id } });
+    if (!agent) throw new HttpError(404, "Agent not found");
+  }
+
+  return prisma.trigger.create({
+    data: {
+      name: args.name,
+      type: args.type,
+      config: (args.config ?? {}) as any,
+      message: args.message,
+      enabled: args.enabled ?? true,
+      websiteId: args.websiteId,
+      agentId: args.agentId ?? null,
+    },
+  });
+};
+
+const updateTriggerSchema = z.object({
+  id: z.string(),
+  name: z.string().min(1).max(100).optional(),
+  type: z.enum(["time_on_page", "scroll_depth", "exit_intent", "page_visit"]).optional(),
+  config: z.record(z.unknown()).optional(),
+  message: z.string().min(1).max(500).optional(),
+  enabled: z.boolean().optional(),
+  agentId: z.string().nullable().optional(),
+});
+
+export const updateTrigger: any = async (rawArgs: unknown, context: any) => {
+  assertUserAndOrg(context);
+  const { id, ...data } = ensureArgsSchemaOrThrowHttpError(updateTriggerSchema, rawArgs);
+  const org = await getOrCreateUserOrg(context.user!.id);
+  const trigger = await prisma.trigger.findUnique({ where: { id }, include: { website: true } });
+  if (!trigger || trigger.website.organizationId !== org.id) throw new HttpError(404, "Trigger not found");
+
+  const updateData: Record<string, unknown> = {};
+  if (data.name !== undefined) updateData.name = data.name;
+  if (data.type !== undefined) updateData.type = data.type;
+  if (data.config !== undefined) updateData.config = data.config;
+  if (data.message !== undefined) updateData.message = data.message;
+  if (data.enabled !== undefined) updateData.enabled = data.enabled;
+  if (data.agentId !== undefined) updateData.agentId = data.agentId;
+
+  return prisma.trigger.update({ where: { id }, data: updateData });
+};
+
+const deleteTriggerSchema = z.object({
+  id: z.string(),
+});
+
+export const deleteTrigger: any = async (rawArgs: unknown, context: any) => {
+  assertUserAndOrg(context);
+  const { id } = ensureArgsSchemaOrThrowHttpError(deleteTriggerSchema, rawArgs);
+  const org = await getOrCreateUserOrg(context.user!.id);
+  const trigger = await prisma.trigger.findUnique({ where: { id }, include: { website: true } });
+  if (!trigger || trigger.website.organizationId !== org.id) throw new HttpError(404, "Trigger not found");
+  await prisma.trigger.delete({ where: { id } });
+};

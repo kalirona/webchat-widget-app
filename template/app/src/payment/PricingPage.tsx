@@ -23,6 +23,9 @@ import {
   prettyPaymentPlanName,
   SubscriptionStatus,
 } from "./plans";
+import { PublicNavbar } from "../marketing/PublicNavbar";
+import { Footer } from "../landing-page/components/Footer";
+import { footerNavigation } from "../landing-page/contentSections";
 
 const bestDealPaymentPlanId: PaymentPlanId = PaymentPlanId.Pro;
 
@@ -118,7 +121,9 @@ export function PricingPage() {
   };
 
   return (
-    <div className="py-10 lg:mt-10">
+    <div className="bg-background text-foreground">
+      <PublicNavbar />
+      <div className="py-10 lg:mt-10">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <div id="pricing" className="mx-auto max-w-4xl text-center">
           <h2 className="text-foreground mt-2 text-4xl font-bold tracking-tight sm:text-5xl">
@@ -232,6 +237,7 @@ export function PricingPage() {
           ))}
         </div>
       </div>
+      <Footer footerNavigation={footerNavigation} />
     </div>
   );
 }
