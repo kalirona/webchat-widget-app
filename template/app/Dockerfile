@@ -6,7 +6,7 @@ RUN apt-get update && apt-get install -y openssl libssl-dev ca-certificates curl
 RUN curl -sSL "https://github.com/wasp-lang/wasp/releases/download/v0.24.0/wasp-linux-x86_64.tar.gz" -o /tmp/wasp.tar.gz && \
     mkdir -p /tmp/wasp-extract && \
     tar -xzf /tmp/wasp.tar.gz -C /tmp/wasp-extract && \
-    cp /tmp/wasp-extract/wasp /usr/local/bin/wasp && \
+    find /tmp/wasp-extract -name "wasp" -type f -exec cp {} /usr/local/bin/wasp \; && \
     chmod +x /usr/local/bin/wasp && \
     rm -rf /tmp/wasp.tar.gz /tmp/wasp-extract && \
     wasp version
