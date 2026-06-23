@@ -101,6 +101,7 @@ model Invitation {
   organization              Organization    @relation(fields: [organizationId], references: [id])
   organizationId            String
   invitedBy                 User            @relation(fields: [invitedById], references: [id])
+  invitedById               String
 
   @@unique([organizationId, email])
 }
@@ -131,8 +132,8 @@ model Agent {
   systemPrompt              String          @default("You are a helpful AI assistant.")
   welcomeMessage            String?         @default("Hello! How can I help you today?")
   temperature               Float           @default(0.7)
-  providerOverride          String?         @default(null)
-  modelOverride             String?         @default(null)
+  providerOverride          String?
+  modelOverride             String?
   maxTokens                 Int             @default(4096)
   status                    String          @default("draft")
 
