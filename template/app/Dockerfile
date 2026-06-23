@@ -3,10 +3,9 @@ FROM node:20-bookworm-slim AS builder
 RUN apt-get update && apt-get install -y openssl libssl-dev ca-certificates curl
 
 # Install Wasp CLI v0.24.0
-# Install Wasp CLI v0.24.0
 RUN curl -sSL "https://github.com/wasp-lang/wasp/releases/download/v0.24.0/wasp-linux-x86_64.tar.gz" -o /tmp/wasp.tar.gz && \
     cd /tmp && mkdir waspextract && cd waspextract && tar -xzf ../wasp.tar.gz && \
-    f=$$(find . -name "wasp" -type f | head -1) && cp "$$f" /usr/local/bin/wasp && chmod +x /usr/local/bin/wasp && \
+    cp wasp-bin /usr/local/bin/wasp && chmod +x /usr/local/bin/wasp && \
     cd / && rm -rf /tmp/wasp.tar.gz /tmp/waspextract && \
     wasp version
 
