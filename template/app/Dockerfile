@@ -3,8 +3,8 @@ FROM node:20-bookworm-slim AS builder
 RUN apt-get update && apt-get install -y openssl libssl-dev ca-certificates
 
 WORKDIR /app
-COPY package.json package-lock.json ./
-RUN npm ci
+COPY package.json ./
+RUN npm install
 
 COPY . .
 RUN npm install -g wasp@0.24.0
@@ -22,4 +22,4 @@ EXPOSE 3001
 
 ENV NODE_ENV=production
 
-CMD sh -c "cd server && npx prisma migrate deploy 2>/dev/null; node server.js"
+CMD ["sh", "-c", "cd server && npx prisma migrate deploy 2>/dev/null; node server.js"]
