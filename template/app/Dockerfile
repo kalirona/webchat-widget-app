@@ -1,4 +1,4 @@
-FROM node:20-bookworm-slim AS builder
+FROM node:24-bookworm-slim AS builder
 
 RUN apt-get update && apt-get install -y openssl libssl-dev ca-certificates curl
 
@@ -16,7 +16,7 @@ RUN npm install
 COPY . .
 RUN wasp build
 
-FROM node:20-bookworm-slim
+FROM node:24-bookworm-slim
 
 RUN apt-get update && apt-get install -y openssl ca-certificates && rm -rf /var/lib/apt/lists/*
 
