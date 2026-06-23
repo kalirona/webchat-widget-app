@@ -92,22 +92,6 @@ async function getOrCreateUserOrg(userId: string) {
 
   return org;
 }
-  const user = await prisma.user.findUnique({ where: { id: userId } });
-  const orgName = user?.username
-    ? `${user.username}'s Organization`
-    : "My Organization";
-  const org = await prisma.organization.create({
-    data: { name: orgName },
-  });
-  await prisma.organizationMember.create({
-    data: {
-      organizationId: org.id,
-      userId,
-      role: "owner",
-    },
-  });
-  return org;
-}
 
 export const getOrganization: any = async (_args: unknown, context: any) => {
   assertUserAndOrg(context);

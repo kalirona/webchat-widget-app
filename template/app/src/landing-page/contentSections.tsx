@@ -9,8 +9,6 @@ import searchcraft from "../client/static/examples/searchcraft.webp";
 import type { GridFeature } from "./components/FeaturesGrid";
 
 export const features: GridFeature[] = [
-
-export const features: GridFeature[] = [
   {
     name: "Cool Feature 1",
     description: "Your feature",

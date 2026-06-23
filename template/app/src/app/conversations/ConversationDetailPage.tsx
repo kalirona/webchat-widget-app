@@ -142,6 +142,35 @@ export function ConversationDetailPage({ user }: { user: AuthUser }) {
         <div className="bg-card rounded-2xl border border-border/50 shadow-sm overflow-hidden">
           <div className="flex h-[calc(100vh-280px)] min-h-[500px]">
               <div className="flex flex-1 flex-col overflow-hidden">
+                <div className="flex items-center justify-between gap-2 border-b border-border/50 px-6 py-3">
+                  <div>
+                    <h2 className="text-base font-semibold">
+                      {detail.lead?.name || detail.visitor?.name || "Anonymous Visitor"}
+                    </h2>
+                    <p className="text-muted-foreground text-xs">
+                      {detail.lead?.email || detail.visitor?.email || "No email"}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {detail.status !== "resolved" && (
+                      <>
+                        {detail.status !== "human" && (
+                          <button onClick={handleAssignSelf} className="hover:bg-muted flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors">
+                            <UserPlus className="h-3.5 w-3.5" /> Assign me
+                          </button>
+                        )}
+                        {detail.status !== "escalated" && (
+                          <button onClick={handleEscalate} className="hover:bg-red-50 flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-red-600 transition-colors dark:hover:bg-red-900/20">
+                            <AlertTriangle className="h-3.5 w-3.5" /> Escalate
+                          </button>
+                        )}
+                        <button onClick={handleResolve} disabled={resolving} className="hover:bg-muted flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors">
+                          <CheckCircle className="h-3.5 w-3.5" /> {resolving ? "Resolving..." : "Resolve"}
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
                 <div className="flex-1 overflow-y-auto px-6 py-4">
                   <div className="w-full max-w-3xl mx-auto space-y-4">
                     {detail.messages?.length === 0 ? (
@@ -199,69 +228,6 @@ export function ConversationDetailPage({ user }: { user: AuthUser }) {
                   </div>
                 </div>
               </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h2 className="text-lg font-semibold">{detail.lead?.name || detail.visitor?.name || "Anonymous Visitor"}</h2>
-                      <StatusBadge status={detail.status} />
-                    </div>
-                    <p className="text-muted-foreground text-xs">{detail.lead?.email || detail.visitor?.email || "No email"}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  {detail.status !== "resolved" && (
-                    <>
-                      {detail.status !== "human" && (
-                        <button onClick={handleAssignSelf} className="hover:bg-muted flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors">
-                          <UserPlus className="h-3.5 w-3.5" /> Assign me
-                        </button>
-                      )}
-                      {detail.status !== "escalated" && (
-                        <button onClick={handleEscalate} className="hover:bg-red-50 flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-red-600 transition-colors dark:hover:bg-red-900/20">
-                          <AlertTriangle className="h-3.5 w-3.5" /> Escalate
-                        </button>
-                      )}
-                      <button onClick={handleResolve} disabled={resolving} className="hover:bg-muted flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors">
-                        <CheckCircle className="h-3.5 w-3.5" /> {resolving ? "Resolving..." : "Resolve"}
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex flex-1 overflow-y-auto px-6 py-4">
-                <div className="w-full max-w-3xl mx-auto space-y-4">
-                  {detail.messages?.length === 0 ? (
-                    <div className="flex flex-1 items-center justify-center py-20">
-                      <div className="text-center">
-                        <MessageSquare className="text-muted-foreground mx-auto mb-3 h-12 w-12" />
-                        <p className="text-muted-foreground text-sm">No messages yet</p>
-                      </div>
-                    </div>
-                  ) : (
-                    detail.messages?.map((msg: any) => (
-                      <div key={msg.id} className={`flex gap-3 ${msg.role === "assistant" ? "" : "flex-row-reverse"}`}>
-                        <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
-                          msg.role === "assistant" ? "bg-primary/10 text-primary" : msg.role === "system" ? "bg-amber-100 text-amber-700" : "bg-muted text-foreground"
-                        }`}>
-                          {msg.role === "assistant" ? <Bot className="h-4 w-4" /> : msg.role === "system" ? <AlertTriangle className="h-4 w-4" /> : <User className="h-4 w-4" />}
-                        </div>
-                        <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-                          msg.role === "assistant" ? "bg-muted" : msg.role === "system" ? "bg-amber-50 text-amber-800 dark:bg-amber-900/20 dark:text-amber-200" : "bg-primary text-primary-foreground"
-                        }`}>
-                          <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                          <p className={`mt-1 text-xs ${msg.role === "assistant" ? "text-muted-foreground" : "text-primary-foreground/70"}`}>
-                            {new Date(msg.createdAt).toLocaleString()}
-                            {msg.tokens && <span> · {msg.tokens} tokens</span>}
-                            {msg.cost && <span> · ${msg.cost.toFixed(4)}</span>}
-                            {msg.model && <span> · {msg.model}</span>}
-                          </p>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            </div>
 
             <div className="w-72 shrink-0 border-l border-border/50 p-5 overflow-y-auto">
               <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Visitor Info</h3>

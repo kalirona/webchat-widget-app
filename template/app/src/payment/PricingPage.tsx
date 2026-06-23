@@ -237,6 +237,7 @@ export function PricingPage() {
           ))}
         </div>
       </div>
+    </div>
       <Footer footerNavigation={footerNavigation} />
     </div>
   );
