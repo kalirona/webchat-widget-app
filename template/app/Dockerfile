@@ -18,8 +18,10 @@ RUN npm install
 COPY . .
 RUN wasp install
 RUN wasp build
+# Debug: inspect server directory structure
+RUN ls -la /app/.wasp/out/server/ && ls -la /app/.wasp/out/server/src/ && echo "--- package.json ---" && cat /app/.wasp/out/server/package.json
 # wasp v0.24 does not pre-bundle the server; run bundle to create server/bundle/server.js
-RUN cd .wasp/out/server && npm run bundle 2>&1 || (echo "=== Bundle failed ===" && cat /app/.wasp/out/server/tsconfig.json 2>/dev/null && ls /app/.wasp/out/server/ 2>/dev/null && exit 1)
+RUN cd /app/.wasp/out/server && npm run bundle
 
 FROM node:24-bookworm-slim
 
