@@ -25,12 +25,12 @@ RUN apt-get update && apt-get install -y openssl ca-certificates && rm -rf /var/
 
 WORKDIR /app
 COPY --from=builder /app/.wasp/out ./
-RUN (cd server && npm ci --production) 2>/dev/null; (cd web-app && npm ci --production) 2>/dev/null; true
-
-RUN npx prisma generate 2>/dev/null; true
+RUN (cd server && npm ci --production) 2>/dev/null; true
+RUN npx prisma generate --schema=db/schema.prisma 2>/dev/null; true
 
 EXPOSE 3001
 
 ENV NODE_ENV=production
 
-CMD ["sh", "-c", "cd server && npx prisma migrate deploy 2>/dev/null; node server.js"]
+# wasp v0.24 bundles server into server/bundle/server.js
+CMD ["sh", "-c", "cd server && npx prisma migrate deploy 2>/dev/null; node bundle/server.js"]
