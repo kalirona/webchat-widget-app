@@ -1,7 +1,7 @@
 import { type PrismaClient } from "@prisma/client";
 import express from "express";
 import type { Stripe } from "stripe";
-import { env, type MiddlewareConfigFn } from "wasp/server";
+import { env, type MiddlewareConfigFn, prisma } from "wasp/server";
 import { type PaymentsWebhook } from "wasp/server/api";
 import { emailSender } from "wasp/server/email";
 import { assertUnreachable } from "../../shared/utils";
@@ -10,7 +10,8 @@ import { getPaymentPlanIdByPaymentProcessorPlanId } from "../paymentProcessorPla
 import { PaymentPlanId, paymentPlans, SubscriptionStatus } from "../plans";
 import { updateUserCredits, updateUserSubscription } from "../user";
 import { stripeClient } from "./stripeClient";
-import { getPlanLimits, prettyPaymentPlanName } from "../../app/billing/constants";
+import { getPlanLimits } from "../../app/billing/constants";
+import { prettyPaymentPlanName } from "../plans";
 import { sendSubscriptionActivatedEmail, sendSubscriptionCancelledEmail } from "../../app/billing/emails";
 
 /**
@@ -312,3 +313,4 @@ function getInvoicePaidAtDate(invoice: Stripe.Invoice): Date {
   // so we multiply by 1000 to convert to milliseconds.
   return new Date(invoice.status_transitions.paid_at * 1000);
 }
+

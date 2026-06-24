@@ -80,7 +80,7 @@ export const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 // Helper Functions
 export function formatKnowledgeBaseError(error: z.ZodError): string {
-  const firstError = error.errors[0];
+  const firstError = error.issues[0];
   if (firstError) {
     return firstError.message;
   }
@@ -109,3 +109,4 @@ export function formatDocumentCount(count: number): string {
   if (count === 1) return "1 document";
   return `${count} documents`;
 }
+

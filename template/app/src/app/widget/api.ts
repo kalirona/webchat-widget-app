@@ -78,7 +78,7 @@ export const widgetGetConfig = async (req: express.Request, res: express.Respons
 
   try {
     const website = await prisma.website.findUnique({
-      where: { id: req.params.websiteId },
+      where: { id: req.params.websiteId as string },
       include: {
         agent: { select: { name: true, welcomeMessage: true } },
         triggers: { where: { enabled: true }, select: { id: true, type: true, config: true, message: true, agentId: true } },
@@ -304,7 +304,7 @@ export const widgetGetMessages = async (req: express.Request, res: express.Respo
   if (req.method === "OPTIONS") return res.status(204).send();
 
   try {
-    const { conversationId } = req.params;
+    const conversationId = req.params.conversationId as string;
     if (!conversationId) return res.status(400).json({ error: "Missing conversationId" });
 
     const ip = req.ip || req.socket.remoteAddress || "unknown";
@@ -417,7 +417,7 @@ export const widgetIsTyping = async (req: express.Request, res: express.Response
   if (req.method === "OPTIONS") return res.status(204).send();
 
   try {
-    const { conversationId } = req.params;
+    const conversationId = req.params.conversationId as string;
     if (!conversationId) return res.status(400).json({ error: "Missing conversationId" });
 
     const conversation = await prisma.conversation.findUnique({

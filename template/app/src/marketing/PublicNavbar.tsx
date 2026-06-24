@@ -34,10 +34,10 @@ export function PublicNavbar() {
           ))}
           <div className="ml-4 flex items-center gap-3">
             <Button variant="ghost" size="sm" asChild>
-              <WaspRouterLink to={routes.LoginRoute.to}>Log in</WaspRouterLink>
+              <WaspRouterLink to={"/login"}>Log in</WaspRouterLink>
             </Button>
             <Button size="sm" asChild>
-              <WaspRouterLink to={routes.SignupRoute.to}>Get Started</WaspRouterLink>
+              <WaspRouterLink to={"/signup"}>Get Started</WaspRouterLink>
             </Button>
           </div>
         </div>
@@ -59,11 +59,12 @@ export function PublicNavbar() {
               </WaspRouterLink>
             ))}
             <hr className="border-border/50 my-3" />
-            <WaspRouterLink to={routes.LoginRoute.to} onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground block py-2 text-sm font-medium transition-colors">Log in</WaspRouterLink>
-            <WaspRouterLink to={routes.SignupRoute.to} onClick={() => setOpen(false)} className="text-primary hover:text-primary/80 block py-2 text-sm font-medium transition-colors">Get Started →</WaspRouterLink>
+            <WaspRouterLink to={"/login"} onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground block py-2 text-sm font-medium transition-colors">Log in</WaspRouterLink>
+            <WaspRouterLink to={"/signup"} onClick={() => setOpen(false)} className="text-primary hover:text-primary/80 block py-2 text-sm font-medium transition-colors">Get Started →</WaspRouterLink>
           </div>
         </div>
       )}
     </nav>
   );
 }
+

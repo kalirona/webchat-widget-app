@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router";
 import { useState } from "react";
 import { type AuthUser } from "wasp/auth";
 import { useAction } from "wasp/client/operations";
@@ -26,7 +27,7 @@ export function NewKnowledgeBasePage({ user }: { user: AuthUser }) {
       if (fieldSchema) {
         const result = fieldSchema.safeParse(value);
         if (!result.success) {
-          setFieldErrors((prev) => ({ ...prev, [fieldName]: result.error?.errors[0]?.message || "Invalid" }));
+          setFieldErrors((prev) => ({ ...prev, [fieldName]: result.error?.issues[0]?.message || "Invalid" }));
         } else {
           setFieldErrors((prev) => {
             const next = { ...prev };
@@ -54,7 +55,7 @@ export function NewKnowledgeBasePage({ user }: { user: AuthUser }) {
     if (!validation.success) {
       setError(formatKnowledgeBaseError(validation.error));
       const errors: Record<string, string> = {};
-      validation.error.errors.forEach((err) => {
+      validation.error.issues.forEach((err) => {
         const field = err.path[0];
         if (typeof field === "string") {
           errors[field] = err.message;
@@ -67,7 +68,7 @@ export function NewKnowledgeBasePage({ user }: { user: AuthUser }) {
     setSaving(true);
     try {
       const kb = await createKnowledgeBaseAction(validation.data);
-      navigate("/app/knowledge/:id", { to: `/app/knowledge/${kb.id}` });
+      navigate(`/app/knowledge/${kb.id}`);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to create knowledge base");
     } finally {
@@ -263,3 +264,6 @@ export function NewKnowledgeBasePage({ user }: { user: AuthUser }) {
     </AppLayout>
   );
 }
+
+
+

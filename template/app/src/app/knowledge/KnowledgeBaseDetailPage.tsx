@@ -1,3 +1,4 @@
+import { useParams } from "react-router";
 import { useState, useCallback, useMemo } from "react";
 import { type AuthUser } from "wasp/auth";
 import { useQuery, useAction } from "wasp/client/operations";
@@ -144,7 +145,7 @@ export function KnowledgeBaseDetailPage({ user }: { user: AuthUser }) {
     if (!validation.success) {
       setTextError(formatKnowledgeBaseError(validation.error));
       const errors: Record<string, string> = {};
-      validation.error.errors.forEach((err) => {
+      validation.error.issues.forEach((err) => {
         const field = err.path[0];
         if (typeof field === "string") {
           errors[field] = err.message;
@@ -692,3 +693,5 @@ export function KnowledgeBaseDetailPage({ user }: { user: AuthUser }) {
     </AppLayout>
   );
 }
+
+

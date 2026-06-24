@@ -41,9 +41,10 @@ export const agentFormDefaults: AgentFormData = {
 };
 
 export function formatAgentError(error: z.ZodError): string {
-  const firstError = error.errors[0];
+  const firstError = error.issues[0];
   if (firstError) {
     return firstError.message;
   }
   return "Validation failed";
 }
+

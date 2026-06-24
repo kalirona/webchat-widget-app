@@ -1,0 +1,34 @@
+services:
+  app:
+    build:
+      context: ./template/app
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - ADMIN_EMAILS=${ADMIN_EMAILS}
+      - NODE_ENV=production
+      # AI
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      # Emails
+      - SENDGRID_API_KEY=${SENDGRID_API_KEY:-}
+      # Payment (pick one)
+      - STRIPE_API_KEY=${STRIPE_API_KEY:-}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
+      - PAYMENTS_HOBBY_SUBSCRIPTION_PLAN_ID=${PAYMENTS_HOBBY_SUBSCRIPTION_PLAN_ID:-}
+      - PAYMENTS_PRO_SUBSCRIPTION_PLAN_ID=${PAYMENTS_PRO_SUBSCRIPTION_PLAN_ID:-}
+      - PAYMENTS_CREDITS_10_PLAN_ID=${PAYMENTS_CREDITS_10_PLAN_ID:-}
+      # Social Auth
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
+      # Analytics
+      - PLAUSIBLE_API_KEY=${PLAUSIBLE_API_KEY:-}
+      - PLAUSIBLE_SITE_ID=${PLAUSIBLE_SITE_ID:-}
+      - PLAUSIBLE_BASE_URL=${PLAUSIBLE_BASE_URL:-}
+      # File uploads (S3)
+      - AWS_S3_IAM_ACCESS_KEY=${AWS_S3_IAM_ACCESS_KEY:-}
+      - AWS_S3_IAM_SECRET_KEY=${AWS_S3_IAM_SECRET_KEY:-}
+      - AWS_S3_FILES_BUCKET=${AWS_S3_FILES_BUCKET:-}
+      - AWS_S3_REGION=${AWS_S3_REGION:-}

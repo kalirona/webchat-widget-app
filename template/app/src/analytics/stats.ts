@@ -1,5 +1,6 @@
 import { type DailyStats } from "wasp/entities";
-import { type DailyStatsJob } from "wasp/server/jobs";
+
+type DailyStatsJob<I, O> = (args: I, context: { entities: any }) => Promise<O>;
 import {
   getDailyPageViews,
   getSources,

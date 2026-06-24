@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router";
 import { acceptInvitation } from "wasp/client/operations";
 import { useAuth } from "wasp/client/auth";
 import { AppLayout } from "../layout/AppLayout";
@@ -75,3 +75,4 @@ export function AcceptInvitationPage({ user }: { user: any }) {
     </AppLayout>
   );
 }
+

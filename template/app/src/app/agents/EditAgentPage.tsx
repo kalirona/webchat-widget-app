@@ -1,3 +1,4 @@
+import { useParams, useNavigate } from "react-router";
 import { useState, useEffect } from "react";
 import { type AuthUser } from "wasp/auth";
 import { useQuery, useAction } from "wasp/client/operations";
@@ -61,7 +62,7 @@ export function EditAgentPage({ user }: { user: AuthUser }) {
       if (fieldSchema) {
         const result = fieldSchema.safeParse(value);
         if (!result.success) {
-          setFieldErrors((prev) => ({ ...prev, [fieldName]: result.error?.errors[0]?.message || "Invalid" }));
+          setFieldErrors((prev) => ({ ...prev, [fieldName]: result.error?.issues[0]?.message || "Invalid" }));
         } else {
           setFieldErrors((prev) => {
             const next = { ...prev };
@@ -94,7 +95,7 @@ export function EditAgentPage({ user }: { user: AuthUser }) {
     if (!validation.success) {
       setError(formatAgentError(validation.error));
       const errors: Record<string, string> = {};
-      validation.error.errors.forEach((err) => {
+      validation.error.issues.forEach((err) => {
         const field = err.path[0];
         if (typeof field === "string") {
           errors[field] = err.message;
@@ -107,7 +108,7 @@ export function EditAgentPage({ user }: { user: AuthUser }) {
     setSaving(true);
     try {
       await updateAgentAction({ id: id!, ...validation.data });
-      navigate("/app/agents/:id", { to: `/app/agents/${id}` });
+      navigate(`/app/agents/${id}`);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to update agent");
     } finally {
@@ -462,3 +463,6 @@ export function EditAgentPage({ user }: { user: AuthUser }) {
     </AppLayout>
   );
 }
+
+
+

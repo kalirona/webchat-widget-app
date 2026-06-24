@@ -237,7 +237,7 @@ export function NewWebsitePage({ user }: { user: AuthUser }) {
                           }`}
                           style={{
                             backgroundColor: color,
-                            ringColor: form.widgetColor === color ? color : undefined,
+                            ...(form.widgetColor === color ? ({ '--tw-ring-color': color } as React.CSSProperties) : {}),
                           }}
                         />
                       ))}

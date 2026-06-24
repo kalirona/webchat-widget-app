@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router";
 import { useState } from "react";
 import { type AuthUser } from "wasp/auth";
 import { useAction } from "wasp/client/operations";
@@ -28,7 +29,7 @@ export function NewAgentPage({ user }: { user: AuthUser }) {
     try {
       const result = agentFormSchema.shape[fieldName as keyof typeof agentFormSchema.shape]?.safeParse(value);
       if (result && !result.success) {
-        setFieldErrors((prev) => ({ ...prev, [fieldName]: result.error.errors[0]?.message || "Invalid" }));
+        setFieldErrors((prev) => ({ ...prev, [fieldName]: result.error.issues[0]?.message || "Invalid" }));
       } else {
         setFieldErrors((prev) => {
           const next = { ...prev };
@@ -60,7 +61,7 @@ export function NewAgentPage({ user }: { user: AuthUser }) {
       setError(formatAgentError(validation.error));
       // Set individual field errors
       const errors: Record<string, string> = {};
-      validation.error.errors.forEach((err) => {
+      validation.error.issues.forEach((err) => {
         const field = err.path[0];
         if (typeof field === "string") {
           errors[field] = err.message;
@@ -73,7 +74,7 @@ export function NewAgentPage({ user }: { user: AuthUser }) {
     setSaving(true);
     try {
       const agent = await createAgentAction(validation.data);
-      navigate("/app/agents/:id", { to: `/app/agents/${agent.id}` });
+      navigate(`/app/agents/${agent.id}`);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to create agent");
     } finally {
@@ -312,3 +313,6 @@ export function NewAgentPage({ user }: { user: AuthUser }) {
     </AppLayout>
   );
 }
+
+
+

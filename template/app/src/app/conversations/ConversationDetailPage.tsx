@@ -310,7 +310,7 @@ export function ConversationDetailPage({ user }: { user: AuthUser }) {
                       {detail.visitorHistory.map((vc: any) => (
                         <Link
                           key={vc.id}
-                          to={routes.ConversationDetailRoute.to.replace(":id", vc.id)}
+                          to={routes.ConversationDetailRoute.to.replace(":id", vc.id)} as any}
                           className="hover:bg-muted/50 block rounded-lg border border-border/50 px-3 py-2 transition-colors"
                         >
                           <div className="flex items-center justify-between gap-2">
@@ -336,3 +336,4 @@ export function ConversationDetailPage({ user }: { user: AuthUser }) {
     </AppLayout>
   );
 }
+

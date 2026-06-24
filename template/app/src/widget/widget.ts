@@ -13,7 +13,7 @@
     apiBase = apiBase.replace("/widget", "");
   }
 
-  let config: {
+  type WidgetAppConfig = {
     widgetColor: string;
     widgetPosition: string;
     widgetTitle: string;
@@ -22,12 +22,13 @@
     agentName: string;
     triggers?: Array<{
       type: string;
-      config: Record<string, unknown>;
+      cfg: Record<string, unknown>;
       message: string;
     }>;
     hideBranding?: boolean;
     companyName?: string;
-  } | null = null;
+  };
+  let config: WidgetAppConfig | null = null;
   let conversationId: string | null = null;
   let sessionId = getSessionId();
   let polling = false;
@@ -125,7 +126,7 @@
     }
   }
 
-  function buildWidget(config: NonNullable<typeof config>) {
+  function buildWidget(config: NonNullable<WidgetAppConfig>) {
     const container = document.createElement("div");
     container.id = "opensaas-widget";
     container.style.all = "initial";
@@ -766,7 +767,7 @@
     for (const trigger of triggers) {
       switch (trigger.type) {
         case "time_on_page": {
-          const seconds = (trigger.config?.seconds as number) || 15;
+          const seconds = (trigger.cfg?.seconds as number) || 15;
           const timer = setTimeout(async () => {
             if (triggerFired) return;
             triggerFired = true;
@@ -777,7 +778,7 @@
           break;
         }
         case "scroll_depth": {
-          const percentage = (trigger.config?.percentage as number) || 50;
+          const percentage = (trigger.cfg?.percentage as number) || 50;
           const handler = async () => {
             if (triggerFired) return;
             const scrollPct = (window.scrollY + window.innerHeight) / document.documentElement.scrollHeight * 100;
@@ -803,7 +804,7 @@
           break;
         }
         case "page_visit": {
-          const urlPattern = (trigger.config?.urlPattern as string) || "";
+          const urlPattern = (trigger.cfg?.urlPattern as string) || "";
           if (urlPattern && pageUrl.includes(urlPattern)) {
             triggerFired = true;
             initConversation(pageUrl);

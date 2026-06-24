@@ -31,7 +31,7 @@ export function Footer({
               {footerNavigation.app.map((item) => (
                 <li key={item.name}>
                   <Link
-                    to={item.href}
+                    to={item.href as any}
                     className="text-sm leading-6 text-gray-600 hover:text-gray-900 dark:text-white"
                   >
                     {item.name}
@@ -48,7 +48,7 @@ export function Footer({
               {footerNavigation.company.map((item) => (
                 <li key={item.name}>
                   <Link
-                    to={item.href}
+                    to={item.href as any}
                     className="text-sm leading-6 text-gray-600 hover:text-gray-900 dark:text-white"
                   >
                     {item.name}
@@ -62,3 +62,4 @@ export function Footer({
     </div>
   );
 }
+
