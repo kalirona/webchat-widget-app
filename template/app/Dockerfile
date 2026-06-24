@@ -18,10 +18,9 @@ RUN npm install
 COPY . .
 RUN wasp install
 RUN wasp build
-# Debug: inspect server directory structure
-RUN ls -la /app/.wasp/out/server/ && ls -la /app/.wasp/out/server/src/ && echo "--- package.json ---" && cat /app/.wasp/out/server/package.json
 # wasp v0.24 does not pre-bundle the server; run bundle to create server/bundle/server.js
-RUN cd /app/.wasp/out/server && npm run bundle
+# First copy root tsconfig.json to satisfy project references, then run rollup directly
+RUN cp /app/tsconfig.json /app/.wasp/out/server/ && cd /app/.wasp/out/server && npx rollup --config
 
 FROM node:24-bookworm-slim
 
