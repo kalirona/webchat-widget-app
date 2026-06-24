@@ -16,6 +16,7 @@ COPY package.json ./
 RUN npm install
 
 COPY . .
+RUN wasp install
 RUN wasp build
 
 FROM node:24-bookworm-slim
