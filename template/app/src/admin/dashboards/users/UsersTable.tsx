@@ -62,7 +62,7 @@ export function UsersTable() {
         subscriptionStatusIn: subscriptionStatusFilter,
       }),
     },
-  }) as any;
+  } as Record<string, any> as any;
 
   useEffect(
     function backToPageOne() {
@@ -320,4 +320,5 @@ export function UsersTable() {
     </div>
   );
 }
+
 

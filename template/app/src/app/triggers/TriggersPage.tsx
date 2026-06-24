@@ -17,8 +17,8 @@ const TRIGGER_TYPES = [
 export function TriggersPage({ user }: { user: AuthUser }) {
   const { websiteId } = useParams<{ websiteId: string }>();
   const navigate = useNavigate();
-  const { data: website } = useQuery(getWebsite, { id: websiteId! }) as any
-  const { data: triggers, isLoading, refetch } = useQuery(getTriggers, { websiteId: websiteId! }) as any
+  const { data: website } = useQuery(getWebsite, { id: websiteId! }) as Record<string, any>
+  const { data: triggers, isLoading, refetch } = useQuery(getTriggers, { websiteId: websiteId! }) as Record<string, any>
   const createAction = useAction(createTrigger);
   const updateAction = useAction(updateTrigger);
   const deleteAction = useAction(deleteTrigger);
@@ -260,6 +260,7 @@ export function TriggersPage({ user }: { user: AuthUser }) {
     </AppLayout>
   );
 }
+
 
 
 

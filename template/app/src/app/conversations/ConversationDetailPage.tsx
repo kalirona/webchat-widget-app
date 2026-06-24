@@ -23,7 +23,7 @@ function StatusBadge({ status }: { status: string }) {
 
 export function ConversationDetailPage({ user }: { user: AuthUser }) {
   const { id } = useParams<{ id: string }>();
-  const { data: convDetail, isLoading, error, refetch } = useQuery(getConversationDetail, { id: id! }) as any;
+  const { data: convDetail, isLoading, error, refetch } = useQuery(getConversationDetail, { id: id! }) as Record<string, any>;
   const resolveAction = useAction(resolveConversation);
   const assignAction = useAction(assignConversation);
   const escalateAction = useAction(escalateConversation);
@@ -336,6 +336,7 @@ export function ConversationDetailPage({ user }: { user: AuthUser }) {
     </AppLayout>
   );
 }
+
 
 
 

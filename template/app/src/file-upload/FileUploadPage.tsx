@@ -41,13 +41,13 @@ export function FileUploadPage() {
     // We disable automatic refetching because otherwise files would be refetched after `createFile` is called and the S3 URL is returned,
     // which happens before the file is actually fully uploaded. Instead, we manually (re)fetch on mount and after the upload is complete.
     enabled: false,
-  }) as any;
+  } as Record<string, any> as any;
   const { isLoading: isDownloadUrlLoading, refetch: refetchDownloadUrl } =
     useQuery(
       getDownloadFileSignedURL,
       { s3Key: fileKeyForS3 },
       { enabled: false },
-    );
+     as Record<string, any> as Record<string, any>;
 
   useEffect(() => {
     allUserFiles.refetch();
@@ -317,4 +317,5 @@ export function FileUploadPage() {
     </>
   );
 }
+
 

@@ -33,8 +33,8 @@ import {
 
 export function KnowledgeBaseDetailPage({ user }: { user: AuthUser }) {
   const { id } = useParams<{ id: string }>();
-  const { data: kb, isLoading: kbLoading, refetch: refetchKb } = useQuery(getKnowledgeBase, { id: id! }) as any
-  const { data: agents } = useQuery(getAgents, { skip: 0, pageSize: 100 }) as any;
+  const { data: kb, isLoading: kbLoading, refetch: refetchKb } = useQuery(getKnowledgeBase, { id: id! }) as Record<string, any>
+  const { data: agents } = useQuery(getAgents, { skip: 0, pageSize: 100 }) as Record<string, any>;
 
   const uploadAction = useAction(uploadKnowledgeDocument);
   const crawlAction = useAction(crawlUrl);

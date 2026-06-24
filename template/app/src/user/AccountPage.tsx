@@ -169,7 +169,7 @@ function prettyPrintEndOfBillingPeriod(datePaid: Date) {
 
 function CustomerPortalButton() {
   const { data: customerPortalUrl, isLoading: isCustomerPortalUrlLoading } =
-    useQuery(getCustomerPortalUrl);
+    useQuery(getCustomerPortalUrl as Record<string, any> as Record<string, any>;
 
   if (!customerPortalUrl) {
     return null;
@@ -203,3 +203,4 @@ function BuyMoreButton({
     </WaspRouterLink>
   );
 }
+

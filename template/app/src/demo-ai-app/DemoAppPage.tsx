@@ -131,7 +131,7 @@ function NewTaskForm({
   const [isPlanGenerating, setIsPlanGenerating] = useState<boolean>(false);
 
   const { data: tasks, isLoading: isTasksLoading } =
-    useQuery(getAllTasksByUser);
+    useQuery(getAllTasksByUser as Record<string, any> as Record<string, any>;
 
   const handleSubmit = async () => {
     try {
@@ -492,3 +492,4 @@ function TaskCardItem({ description, time }: TaskItem) {
     </li>
   );
 }
+

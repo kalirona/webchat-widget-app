@@ -18,8 +18,8 @@ import {
 export function EditWebsitePage({ user }: { user: AuthUser }) {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { data: website, isLoading } = useQuery(getWebsite, { id: id! }) as any
-  const { data: agents } = useQuery(getAgents) as any;
+  const { data: website, isLoading } = useQuery(getWebsite, { id: id! }) as Record<string, any>
+  const { data: agents } = useQuery(getAgents) as Record<string, any>;
 
   const [form, setForm] = useState<WebsiteFormData>({
     name: "",
@@ -531,6 +531,7 @@ export function EditWebsitePage({ user }: { user: AuthUser }) {
     </AppLayout>
   );
 }
+
 
 
 

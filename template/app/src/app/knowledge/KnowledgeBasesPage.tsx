@@ -11,7 +11,7 @@ import {
 import { Button } from "../../client/components/ui/button";
 
 export function KnowledgeBasesPage({ user }: { user: AuthUser }) {
-  const { data: knowledgeBases, isLoading, error } = useQuery(getKnowledgeBases) as any
+  const { data: knowledgeBases, isLoading, error } = useQuery(getKnowledgeBases) as Record<string, any>
   const deleteKnowledgeBaseAction = useAction(deleteKnowledgeBase);
 
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -176,6 +176,7 @@ export function KnowledgeBasesPage({ user }: { user: AuthUser }) {
     </AppLayout>
   );
 }
+
 
 
 

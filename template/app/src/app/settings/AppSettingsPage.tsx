@@ -52,12 +52,12 @@ const PROVIDER_MODELS: Record<string, string[]> = {
 type Tab = "organization" | "team" | "invitations" | "audit";
 
 export function AppSettingsPage({ user }: { user: AuthUser }) {
-  const { data: org, isLoading: orgLoading } = useQuery(getOrganization) as any
-  const { data: members, isLoading: membersLoading } = useQuery(getOrganizationMembers) as any
-  const { data: aiSettings, isLoading: aiLoading } = useQuery(getAiSettings) as any
-  const { data: aiUsage, isLoading: usageLoading } = useQuery(getAiUsage) as any
-  const { data: invitations, isLoading: invitationsLoading } = useQuery(getInvitations) as any
-  const { data: auditData, isLoading: auditLoading } = useQuery(getAuditLogs, { limit: 20 }) as any
+  const { data: org, isLoading: orgLoading } = useQuery(getOrganization) as Record<string, any>
+  const { data: members, isLoading: membersLoading } = useQuery(getOrganizationMembers) as Record<string, any>
+  const { data: aiSettings, isLoading: aiLoading } = useQuery(getAiSettings) as Record<string, any>
+  const { data: aiUsage, isLoading: usageLoading } = useQuery(getAiUsage) as Record<string, any>
+  const { data: invitations, isLoading: invitationsLoading } = useQuery(getInvitations) as Record<string, any>
+  const { data: auditData, isLoading: auditLoading } = useQuery(getAuditLogs, { limit: 20 }) as Record<string, any>
 
   const [activeTab, setActiveTab] = useState<Tab>("organization");
 
@@ -878,6 +878,7 @@ export function AppSettingsPage({ user }: { user: AuthUser }) {
     </AppLayout>
   );
 }
+
 
 
 

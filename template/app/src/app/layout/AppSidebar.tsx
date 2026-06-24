@@ -35,7 +35,7 @@ export function AppSidebar({ sidebarOpen, setSidebarOpen }: AppSidebarProps) {
   const [sidebarExpanded, setSidebarExpanded] = useState(
     storedSidebarExpanded === null ? false : storedSidebarExpanded === "true",
   );
-  const { data: org } = useQuery(getOrganization) as any
+  const { data: org } = useQuery(getOrganization) as Record<string, any>
 
   useEffect(() => {
     const clickHandler = ({ target }: PointerEvent) => {
@@ -138,6 +138,7 @@ export function AppSidebar({ sidebarOpen, setSidebarOpen }: AppSidebarProps) {
     </aside>
   );
 }
+
 
 
 

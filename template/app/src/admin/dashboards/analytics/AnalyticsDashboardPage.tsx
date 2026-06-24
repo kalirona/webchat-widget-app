@@ -10,7 +10,7 @@ import { TotalRevenueCard } from "./TotalRevenueCard";
 import { TotalSignupsCard } from "./TotalSignupsCard";
 
 export function AnalyticsDashboardPage({ user }: { user: AuthUser }) {
-  const { data: stats, isLoading, error } = useQuery(getDailyStats) as any;
+  const { data: stats, isLoading, error } = useQuery(getDailyStats) as Record<string, any>;
 
   if (error) {
     return (
@@ -85,6 +85,7 @@ export function AnalyticsDashboardPage({ user }: { user: AuthUser }) {
     </DefaultLayout>
   );
 }
+
 
 
 
