@@ -22,7 +22,7 @@ import { agentFormSchema, formatAgentError } from "./validation";
 export function EditAgentPage({ user }: { user: AuthUser }) {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { data: agent, isLoading: agentLoading } = useQuery(getAgent, { id: id! });
+  const { data: agent, isLoading: agentLoading } = useQuery(getAgent, { id: id! }) as any;
   const updateAgentAction = useAction(updateAgent);
   const deleteAgentAction = useAction(deleteAgent);
 
@@ -463,6 +463,7 @@ export function EditAgentPage({ user }: { user: AuthUser }) {
     </AppLayout>
   );
 }
+
 
 
 

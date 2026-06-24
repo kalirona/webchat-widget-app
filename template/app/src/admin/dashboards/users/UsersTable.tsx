@@ -62,7 +62,7 @@ export function UsersTable() {
         subscriptionStatusIn: subscriptionStatusFilter,
       }),
     },
-  });
+  }) as any;
 
   useEffect(
     function backToPageOne() {
@@ -320,3 +320,4 @@ export function UsersTable() {
     </div>
   );
 }
+

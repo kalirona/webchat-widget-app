@@ -71,7 +71,7 @@ export function PricingPage() {
     data: customerPortalUrl,
     isLoading: isCustomerPortalUrlLoading,
     error: customerPortalUrlError,
-  } = useQuery(getCustomerPortalUrl, { enabled: isUserSubscribed });
+  } = useQuery(getCustomerPortalUrl, { enabled: isUserSubscribed }) as any;
 
   const navigate = useNavigate();
 
@@ -242,3 +242,4 @@ export function PricingPage() {
     </div>
   );
 }
+

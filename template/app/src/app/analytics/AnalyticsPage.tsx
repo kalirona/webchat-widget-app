@@ -74,7 +74,7 @@ const BarChartComponent = memo(function BarChartComponent({ data, color }: { dat
 });
 
 export function AnalyticsPage({ user }: { user: AuthUser }) {
-  const { data, isLoading, error } = useQuery(getAnalyticsData);
+  const { data, isLoading, error } = useQuery(getAnalyticsData) as any;
 
   const chartData = useMemo(() => {
     if (!data) return null;
@@ -297,3 +297,4 @@ export function AnalyticsPage({ user }: { user: AuthUser }) {
     </AppLayout>
   );
 }
+

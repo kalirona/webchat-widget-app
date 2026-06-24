@@ -20,8 +20,8 @@ type ChatMessage = {
 
 export function AgentDetailPage({ user }: { user: AuthUser }) {
   const { id } = useParams<{ id: string }>();
-  const { data: agent, isLoading: agentLoading } = useQuery(getAgent, { id: id! });
-  const { data: stats } = useQuery(getAgentStats, { id: id! });
+  const { data: agent, isLoading: agentLoading } = useQuery(getAgent, { id: id! }) as any;
+  const { data: stats } = useQuery(getAgentStats, { id: id! }) as any;
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -307,6 +307,7 @@ export function AgentDetailPage({ user }: { user: AuthUser }) {
     </AppLayout>
   );
 }
+
 
 
 
