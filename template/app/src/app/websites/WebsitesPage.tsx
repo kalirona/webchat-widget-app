@@ -183,14 +183,14 @@ export function WebsitesPage({ user }: { user: AuthUser }) {
                 {/* Actions */}
                 <div className="border-t border-border/50 pt-4 flex items-center gap-1">
                   <Link
-                    to={routes.EditWebsiteRoute.to.replace(":id", website.id)} as any}
+                    to={routes.EditWebsiteRoute.to.replace(":id", website.id) as any}
                     className="hover:bg-muted inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
                   >
                     <Settings className="h-3.5 w-3.5" />
                     Configure
                   </Link>
                   <Link
-                    to={routes.EditWebsiteRoute.to.replace(":id", website.id)} as any}
+                    to={routes.EditWebsiteRoute.to.replace(":id", website.id) as any}
                     className="hover:bg-muted inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
                   >
                     <Code2 className="h-3.5 w-3.5" />
@@ -239,4 +239,5 @@ export function WebsitesPage({ user }: { user: AuthUser }) {
     </AppLayout>
   );
 }
+
 

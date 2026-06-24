@@ -158,7 +158,7 @@ export function DashboardPage({ user }: { user: AuthUser }) {
                   {stats.recentConversations.map((conv) => (
                     <Link
                       key={conv.id}
-                      to={routes.ConversationDetailRoute.to.replace(":id", conv.id)} as any}
+                      to={routes.ConversationDetailRoute.to.replace(":id", conv.id) as any}
                       className="hover:bg-muted/50 flex items-center justify-between rounded-xl px-4 py-3 transition-colors"
                     >
                       <div className="flex items-center gap-3">
@@ -254,4 +254,5 @@ const StatCard = memo(function StatCard({
     </div>
   );
 });
+
 

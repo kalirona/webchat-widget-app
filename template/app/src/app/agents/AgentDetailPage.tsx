@@ -139,7 +139,7 @@ export function AgentDetailPage({ user }: { user: AuthUser }) {
           </div>
         </div>
         <Link
-          to={routes.EditAgentRoute.to.replace(":id", agent.id)} as any}
+          to={routes.EditAgentRoute.to.replace(":id", agent.id) as any}
           className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition-all shadow-lg shadow-primary/25"
         >
           <Pencil className="h-4 w-4" />
@@ -307,5 +307,6 @@ export function AgentDetailPage({ user }: { user: AuthUser }) {
     </AppLayout>
   );
 }
+
 
 

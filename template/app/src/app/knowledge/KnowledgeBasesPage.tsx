@@ -105,7 +105,7 @@ export function KnowledgeBasesPage({ user }: { user: AuthUser }) {
           {knowledgeBases.map((kb) => (
             <Link
               key={kb.id}
-              to={routes.KnowledgeBaseDetailRoute.to.replace(":id", kb.id)} as any}
+              to={routes.KnowledgeBaseDetailRoute.to.replace(":id", kb.id) as any}
               className="bg-card hover:border-primary/30 group rounded-2xl border border-border/50 p-6 shadow-sm transition-all hover:shadow-md"
             >
               <div className="mb-4 flex items-start justify-between">
@@ -176,4 +176,5 @@ export function KnowledgeBasesPage({ user }: { user: AuthUser }) {
     </AppLayout>
   );
 }
+
 

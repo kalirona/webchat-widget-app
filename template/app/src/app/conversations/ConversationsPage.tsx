@@ -399,7 +399,7 @@ export function ConversationsPage({ user }: { user: AuthUser }) {
                     return (
                       <Link
                         key={conv.id}
-                        to={routes.ConversationDetailRoute.to.replace(":id", conv.id)} as any}
+                        to={routes.ConversationDetailRoute.to.replace(":id", conv.id) as any}
                         className={`flex items-start gap-3 px-5 py-4 transition-colors ${
                           isActive ? "bg-primary/5" : "hover:bg-muted/50"
                         }`}
@@ -461,4 +461,5 @@ export function ConversationsPage({ user }: { user: AuthUser }) {
     </AppLayout>
   );
 }
+
 

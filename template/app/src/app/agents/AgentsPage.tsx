@@ -157,7 +157,7 @@ export function AgentsPage({ user }: { user: AuthUser }) {
             {agents.map((agent) => (
               <Link
                 key={agent.id}
-                to={routes.AgentDetailRoute.to.replace(":id", agent.id)} as any}
+                to={routes.AgentDetailRoute.to.replace(":id", agent.id) as any}
                 className="bg-card hover:border-primary/30 group rounded-2xl border border-border/50 p-6 shadow-sm transition-all hover:shadow-md"
               >
                 <div className="mb-4 flex items-start justify-between">
@@ -201,14 +201,14 @@ export function AgentsPage({ user }: { user: AuthUser }) {
                 </div>
                 <div className="flex items-center gap-1" onClick={(e) => e.preventDefault()}>
                   <Link
-                    to={routes.AgentDetailRoute.to.replace(":id", agent.id)} as any}
+                    to={routes.AgentDetailRoute.to.replace(":id", agent.id) as any}
                     className="hover:bg-muted inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
                   >
                     <Eye className="h-3.5 w-3.5" />
                     View
                   </Link>
                   <Link
-                    to={routes.EditAgentRoute.to.replace(":id", agent.id)} as any}
+                    to={routes.EditAgentRoute.to.replace(":id", agent.id) as any}
                     className="hover:bg-muted inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
                   >
                     <Pencil className="h-3.5 w-3.5" />
@@ -297,4 +297,5 @@ export function AgentsPage({ user }: { user: AuthUser }) {
     </AppLayout>
   );
 }
+
 
