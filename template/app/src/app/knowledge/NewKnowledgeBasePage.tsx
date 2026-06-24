@@ -67,7 +67,7 @@ export function NewKnowledgeBasePage({ user }: { user: AuthUser }) {
 
     setSaving(true);
     try {
-      const kb = await createKnowledgeBaseAction(validation.data);
+      const kb = await createKnowledgeBaseAction(validation.data) as any;
       navigate(`/app/knowledge/${kb.id}`);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to create knowledge base");

@@ -14,7 +14,7 @@ import {
 import { Button } from "../../client/components/ui/button";
 
 export function LeadsPage({ user }: { user: AuthUser }) {
-  const { data: leads, isLoading, error } = useQuery(getLeads);
+  const { data: leads, isLoading, error } = useQuery(getLeads) as any
   const updateLeadAction = useAction(updateLead);
   const deleteLeadAction = useAction(deleteLead);
 
@@ -364,3 +364,4 @@ export function LeadsPage({ user }: { user: AuthUser }) {
     </AppLayout>
   );
 }
+

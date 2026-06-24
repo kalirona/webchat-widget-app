@@ -15,7 +15,7 @@ import { Button } from "../../client/components/ui/button";
 import { WEBSITE_STATUS, getDomainFromUrl } from "./constants";
 
 export function WebsitesPage({ user }: { user: AuthUser }) {
-  const { data: websites, isLoading, error } = useQuery(getWebsites);
+  const { data: websites, isLoading, error } = useQuery(getWebsites) as any
   const deleteWebsiteAction = useAction(deleteWebsite);
 
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -239,5 +239,6 @@ export function WebsitesPage({ user }: { user: AuthUser }) {
     </AppLayout>
   );
 }
+
 
 

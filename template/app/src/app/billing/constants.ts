@@ -44,7 +44,8 @@ export function getPlanLimits(plan: string | null | undefined): typeof PLAN_LIMI
 
 export function getAllowedModels(plan: string | null | undefined): string[] | null {
   if (plan && plan in PLAN_LIMITS) {
-    return [...PLAN_LIMITS[plan as PlanId].models] as string[];
+    const models = PLAN_LIMITS[plan as PlanId].models;
+    return models ? [...models] as string[] : null;
   }
   return [...PLAN_LIMITS.free.models] as string[];
 }

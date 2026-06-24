@@ -417,7 +417,7 @@
         if (time) time.textContent = formatTime(new Date());
         existingEl.className = "ow-message " + role + (status === "error" ? " ow-error" : "");
         const idx = currentMessages.findIndex((m) => m.id === id);
-        if (idx >= 0) currentMessages[idx] = { id, content, role, status: (status ?? "completed") as string };
+        if (idx >= 0) currentMessages[idx] = { id, content, role, status: status || "completed" } as any;
         scrollToBottom();
         return;
       }

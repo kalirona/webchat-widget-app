@@ -74,7 +74,7 @@ function VerificationStatus({ websiteId, url }: { websiteId: string; url: string
 }
 
 export function InstallPage({ user }: { user: AuthUser }) {
-  const { data: websites, isLoading } = useQuery(getWebsites);
+  const { data: websites, isLoading } = useQuery(getWebsites) as any
   const [activeStep, setActiveStep] = useState(0);
 
   const steps = [
@@ -271,3 +271,4 @@ export function InstallPage({ user }: { user: AuthUser }) {
     </AppLayout>
   );
 }
+
