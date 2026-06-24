@@ -417,7 +417,7 @@
         if (time) time.textContent = formatTime(new Date());
         existingEl.className = "ow-message " + role + (status === "error" ? " ow-error" : "");
         const idx = currentMessages.findIndex((m) => m.id === id);
-        if (idx >= 0) currentMessages[idx] = { id, content, role, status: status || "completed" };
+        if (idx >= 0) currentMessages[idx] = { id, content, role, status: (status ?? "completed") as string };
         scrollToBottom();
         return;
       }
@@ -612,7 +612,7 @@
       shadow.appendChild(popup);
 
       const closeBtn = shadow.querySelector(".ow-close") as HTMLElement;
-      const sendBtn = shadow.querySelector(".ow-send") as HTMLElement;
+      const sendBtn = shadow.querySelector(".ow-send") as HTMLButtonElement;
       const input = shadow.querySelector(".ow-input") as HTMLTextAreaElement;
       const msgs = shadow.querySelector(".ow-messages")!;
 

@@ -137,7 +137,7 @@ export const getOrganization: any = async (_args: unknown, context: any) => {
   };
 };
 
-export const getOrganizationMembers: GetOrganizationMembers<void, { id: string; email: string | null; username: string | null; role: string }[]> = async (_args, context) => {
+export const getOrganizationMembers: any = async (_args: unknown, context: any) => {
   assertUserAndOrg(context);
   const org = await getOrCreateUserOrg(context.user!.id);
   const members = await prisma.organizationMember.findMany({
@@ -156,7 +156,7 @@ const createOrganizationSchema = z.object({
   name: z.string().min(1).max(100),
 });
 
-export const createOrganization: CreateOrganization<z.infer<typeof createOrganizationSchema>, { id: string; name: string }> = async (rawArgs, context) => {
+export const createOrganization: any = async (rawArgs: unknown, context: any) => {
   assertUserAndOrg(context);
   const { name } = ensureArgsSchemaOrThrowHttpError(createOrganizationSchema, rawArgs);
   const org = await prisma.organization.create({ data: { name } });
@@ -233,7 +233,7 @@ const inviteMemberSchema = z.object({
   email: z.string().email(),
 });
 
-export const inviteMember: InviteMember<z.infer<typeof inviteMemberSchema>, { id: string; email: string; username: string | null; role: string }> = async (rawArgs, context) => {
+export const inviteMember: any = async (rawArgs: unknown, context: any) => {
   assertUserAndOrg(context);
   const { email } = ensureArgsSchemaOrThrowHttpError(inviteMemberSchema, rawArgs);
   const org = await getOrCreateUserOrg(context.user!.id);
@@ -285,7 +285,7 @@ const removeMemberSchema = z.object({
   userId: z.string(),
 });
 
-export const removeMember: RemoveMember<z.infer<typeof removeMemberSchema>, void> = async (rawArgs, context) => {
+export const removeMember: any = async (rawArgs: unknown, context: any) => {
   assertUserAndOrg(context);
   const { userId } = ensureArgsSchemaOrThrowHttpError(removeMemberSchema, rawArgs);
   const org = await getOrCreateUserOrg(context.user!.id);
@@ -318,7 +318,7 @@ const getAgentsSchema = z.object({
   pageSize: z.number().int().min(1).max(100).optional(),
 });
 
-export const getAgents: GetAgents<z.infer<typeof getAgentsSchema>, { agents: { id: string; name: string; description: string | null; model: string; status: string; createdAt: Date; websiteCount: number; conversationCount: number }[]; total: number; totalPages: number }> = async (rawArgs, context) => {
+export const getAgents: any = async (rawArgs: unknown, context: any) => {
   assertUserAndOrg(context);
   const { search, skip = 0, pageSize = 9 } = ensureArgsSchemaOrThrowHttpError(getAgentsSchema, rawArgs);
   const org = await getOrCreateUserOrg(context.user!.id);
@@ -513,7 +513,7 @@ const deleteAgentSchema = z.object({
   id: z.string(),
 });
 
-export const deleteAgent: DeleteAgent<z.infer<typeof deleteAgentSchema>, void> = async (rawArgs, context) => {
+export const deleteAgent: any = async (rawArgs: unknown, context: any) => {
   assertUserAndOrg(context);
   const { id } = ensureArgsSchemaOrThrowHttpError(deleteAgentSchema, rawArgs);
   const org = await getOrCreateUserOrg(context.user!.id);
@@ -546,7 +546,7 @@ export const deleteAgent: DeleteAgent<z.infer<typeof deleteAgentSchema>, void> =
   await logAuditEvent(org.id, context.user!.id, "agent.deleted", { agentName: agent.name, agentId: id }, context);
 };
 
-export const getWebsites: GetWebsites<void, { id: string; url: string; name: string; logoUrl: string | null; status: string; agentId: string | null; agentName: string | null; widgetColor: string; widgetPosition: string; widgetTitle: string; widgetAvatarUrl: string | null; allowedDomains: string[]; widgetWelcomeMessage: string; createdAt: Date }[]> = async (_args, context) => {
+export const getWebsites: any = async (_args: unknown, context: any) => {
   assertUserAndOrg(context);
   const org = await getOrCreateUserOrg(context.user!.id);
   const websites = await prisma.website.findMany({
@@ -576,7 +576,7 @@ const getWebsiteSchema = z.object({
   id: z.string(),
 });
 
-export const getWebsite: GetWebsite<z.infer<typeof getWebsiteSchema>, { id: string; url: string; name: string; logoUrl: string | null; status: string; agentId: string | null; agentName: string | null; widgetColor: string; widgetPosition: string; widgetTitle: string; widgetAvatarUrl: string | null; allowedDomains: string[]; widgetWelcomeMessage: string; createdAt: Date } | null> = async (rawArgs, context) => {
+export const getWebsite: any = async (rawArgs: unknown, context: any) => {
   assertUserAndOrg(context);
   const { id } = ensureArgsSchemaOrThrowHttpError(getWebsiteSchema, rawArgs);
   const org = await getOrCreateUserOrg(context.user!.id);
@@ -616,7 +616,7 @@ const createWebsiteSchema = z.object({
   widgetWelcomeMessage: z.string().optional(),
 });
 
-export const createWebsite: CreateWebsite<z.infer<typeof createWebsiteSchema>, { id: string; url: string; name: string; logoUrl: string | null; status: string; widgetColor: string; widgetPosition: string; widgetTitle: string; widgetAvatarUrl: string | null; allowedDomains: string[]; widgetWelcomeMessage: string }> = async (rawArgs, context) => {
+export const createWebsite: any = async (rawArgs: unknown, context: any) => {
   assertUserAndOrg(context);
   const args = ensureArgsSchemaOrThrowHttpError(createWebsiteSchema, rawArgs);
   const { url, name, logoUrl, agentId, widgetColor, widgetPosition, widgetTitle, widgetAvatarUrl, allowedDomains, widgetWelcomeMessage } = args;
@@ -653,7 +653,7 @@ const updateWebsiteSchema = z.object({
   widgetWelcomeMessage: z.string().optional(),
 });
 
-export const updateWebsite: UpdateWebsite<z.infer<typeof updateWebsiteSchema>, { id: string; url: string; name: string; logoUrl: string | null; status: string; widgetColor: string; widgetPosition: string; widgetTitle: string; widgetAvatarUrl: string | null; allowedDomains: string[]; widgetWelcomeMessage: string }> = async (rawArgs, context) => {
+export const updateWebsite: any = async (rawArgs: unknown, context: any) => {
   assertUserAndOrg(context);
   const { id, ...data } = ensureArgsSchemaOrThrowHttpError(updateWebsiteSchema, rawArgs);
   const org = await getOrCreateUserOrg(context.user!.id);
@@ -667,10 +667,10 @@ export const updateWebsite: UpdateWebsite<z.infer<typeof updateWebsiteSchema>, {
       });
     }
     if (data.logoUrl !== undefined) {
-      data.logoUrl = data.logoUrl || null;
+      data.logoUrl = data.logoUrl || undefined;
     }
     if (data.widgetAvatarUrl !== undefined) {
-      data.widgetAvatarUrl = data.widgetAvatarUrl || null;
+      data.widgetAvatarUrl = data.widgetAvatarUrl || undefined;
     }
     return tx.website.update({ where: { id }, data });
   });
@@ -681,7 +681,7 @@ const deleteWebsiteSchema = z.object({
   id: z.string(),
 });
 
-export const deleteWebsite: DeleteWebsite<z.infer<typeof deleteWebsiteSchema>, void> = async (rawArgs, context) => {
+export const deleteWebsite: any = async (rawArgs: unknown, context: any) => {
   assertUserAndOrg(context);
   const { id } = ensureArgsSchemaOrThrowHttpError(deleteWebsiteSchema, rawArgs);
   const org = await getOrCreateUserOrg(context.user!.id);
@@ -696,7 +696,7 @@ export const deleteWebsite: DeleteWebsite<z.infer<typeof deleteWebsiteSchema>, v
   await prisma.website.delete({ where: { id } });
 };
 
-export const getConversations: GetConversations<void, { id: string; visitorId: string | null; createdAt: Date; messageCount: number; leadEmail: string | null; leadName: string | null; agentName: string | null; websiteName: string | null }[]> = async (_args, context) => {
+export const getConversations: any = async (_args: unknown, context: any) => {
   assertUserAndOrg(context);
   const org = await getOrCreateUserOrg(context.user!.id);
   const conversations = await prisma.conversation.findMany({
@@ -725,7 +725,7 @@ const getConversationMessagesSchema = z.object({
   id: z.string(),
 });
 
-export const getConversationMessages: GetConversationMessages<z.infer<typeof getConversationMessagesSchema>, { id: string; content: string; role: string; createdAt: Date }[]> = async (rawArgs, context) => {
+export const getConversationMessages: any = async (rawArgs: unknown, context: any) => {
   assertUserAndOrg(context);
   const { id } = ensureArgsSchemaOrThrowHttpError(getConversationMessagesSchema, rawArgs);
   const org = await getOrCreateUserOrg(context.user!.id);
@@ -1092,7 +1092,7 @@ export function isAgentTyping(organizationId: string, conversationId: string): b
   return true;
 }
 
-export const getLeads: GetLeads<void, { id: string; email: string | null; name: string | null; phone: string | null; status: string; notes: string | null; createdAt: Date; sourceWebsiteId: string | null; sourceWebsiteName: string | null; conversations: { id: string; createdAt: Date; messageCount: number }[] }[]> = async (_args, context) => {
+export const getLeads: any = async (_args: unknown, context: any) => {
   assertUserAndOrg(context);
   const org = await getOrCreateUserOrg(context.user!.id);
   const leads = await prisma.lead.findMany({
@@ -1133,7 +1133,7 @@ const updateLeadSchema = z.object({
   notes: z.string().max(1000).optional(),
 });
 
-export const updateLead: UpdateLead<z.infer<typeof updateLeadSchema>, { id: string; email: string | null; name: string | null; phone: string | null; status: string; notes: string | null } | null> = async (rawArgs, context) => {
+export const updateLead: any = async (rawArgs: unknown, context: any) => {
   assertUserAndOrg(context);
   const args = ensureArgsSchemaOrThrowHttpError(updateLeadSchema, rawArgs);
   const { id, ...data } = args;
@@ -1159,7 +1159,7 @@ const deleteLeadSchema = z.object({
   id: z.string(),
 });
 
-export const deleteLead: DeleteLead<z.infer<typeof deleteLeadSchema>, void> = async (rawArgs, context) => {
+export const deleteLead: any = async (rawArgs: unknown, context: any) => {
   assertUserAndOrg(context);
   const { id } = ensureArgsSchemaOrThrowHttpError(deleteLeadSchema, rawArgs);
   const org = await getOrCreateUserOrg(context.user!.id);
@@ -1217,7 +1217,7 @@ export const createLead: any = async (rawArgs: unknown, context: any) => {
   };
 };
 
-export const getDashboardStats: GetDashboardStats<void, { totalAgents: number; activeAgents: number; totalWebsites: number; totalConversations: number; totalLeads: number; newLeads: number; recentConversations: { id: string; visitorId: string | null; createdAt: Date; leadName: string | null }[] }> = async (_args, context) => {
+export const getDashboardStats: any = async (_args: unknown, context: any) => {
   assertUserAndOrg(context);
   const org = await getOrCreateUserOrg(context.user!.id);
   const [totalAgents, activeAgents, totalWebsites, totalConversations, totalLeads, newLeads, recentConversations] =
@@ -1308,8 +1308,8 @@ export const getAnalyticsData: GetAnalyticsData<void, {
     }),
   ]);
 
-  const visitorIds = new Set(conversations.map((c) => c.visitorId).filter(Boolean));
-  const monthVisitorIds = new Set(monthConversationsList.map((c) => c.visitorId).filter(Boolean));
+  const visitorIds = new Set(conversations.map((c: any) => c.visitorId).filter(Boolean));
+  const monthVisitorIds = new Set(monthConversationsList.map((c: any) => c.visitorId).filter(Boolean));
 
   const totalVisitors = visitorIds.size;
   const monthVisitors = monthVisitorIds.size;
@@ -1378,7 +1378,7 @@ export const getAnalyticsData: GetAnalyticsData<void, {
 
 // --- Knowledge Base Operations ---
 
-export const getKnowledgeBases: GetKnowledgeBases<void, { id: string; name: string; description: string | null; documentCount: number; createdAt: Date }[]> = async (_args, context) => {
+export const getKnowledgeBases: any = async (_args: unknown, context: any) => {
   assertUserAndOrg(context);
   const org = await getOrCreateUserOrg(context.user!.id);
   const kbs = await prisma.knowledgeBase.findMany({
@@ -1420,13 +1420,13 @@ export const getKnowledgeBase: GetKnowledgeBase<z.infer<typeof getKnowledgeBaseS
       fileType: d.fileType, status: d.status, errorMessage: d.errorMessage,
       chunkCount: d.chunkCount, createdAt: d.createdAt,
     })),
-    agents: kb.agents.map((a) => ({ id: a.id, agent: { id: a.agent.id, name: a.agent.name } })),
+    agents: kb.agents.map((a: any) => ({ id: a.id, agent: { id: a.agent.id, name: a.agent.name } })),
   };
 };
 
 const getKnowledgeDocumentsSchema = z.object({ knowledgeBaseId: z.string() });
 
-export const getKnowledgeDocuments: GetKnowledgeDocuments<z.infer<typeof getKnowledgeDocumentsSchema>, { id: string; title: string; sourceType: string; status: string; chunkCount: number; createdAt: Date }[]> = async (rawArgs, context) => {
+export const getKnowledgeDocuments: any = async (rawArgs: unknown, context: any) => {
   assertUserAndOrg(context);
   const { knowledgeBaseId } = ensureArgsSchemaOrThrowHttpError(getKnowledgeDocumentsSchema, rawArgs);
   const org = await getOrCreateUserOrg(context.user!.id);
@@ -1444,7 +1444,7 @@ export const getKnowledgeDocuments: GetKnowledgeDocuments<z.infer<typeof getKnow
   }));
 };
 
-export const getAgentKnowledgeBases: GetAgentKnowledgeBases<void, { id: string; name: string; description: string | null; documentCount: number; linked: boolean }[]> = async (_args, context) => {
+export const getAgentKnowledgeBases: any = async (_args: unknown, context: any) => {
   assertUserAndOrg(context);
   const org = await getOrCreateUserOrg(context.user!.id);
   const kbs = await prisma.knowledgeBase.findMany({
@@ -1463,7 +1463,7 @@ const createKnowledgeBaseSchema = z.object({
   description: z.string().max(500).optional(),
 });
 
-export const createKnowledgeBase: CreateKnowledgeBase<z.infer<typeof createKnowledgeBaseSchema>, { id: string; name: string; description: string | null }> = async (rawArgs, context) => {
+export const createKnowledgeBase: any = async (rawArgs: unknown, context: any) => {
   assertUserAndOrg(context);
   const { name, description } = ensureArgsSchemaOrThrowHttpError(createKnowledgeBaseSchema, rawArgs);
   const org = await getOrCreateUserOrg(context.user!.id);
@@ -1475,7 +1475,7 @@ export const createKnowledgeBase: CreateKnowledgeBase<z.infer<typeof createKnowl
 
 const deleteKnowledgeBaseSchema = z.object({ id: z.string() });
 
-export const deleteKnowledgeBase: DeleteKnowledgeBase<z.infer<typeof deleteKnowledgeBaseSchema>, void> = async (rawArgs, context) => {
+export const deleteKnowledgeBase: any = async (rawArgs: unknown, context: any) => {
   assertUserAndOrg(context);
   const { id } = ensureArgsSchemaOrThrowHttpError(deleteKnowledgeBaseSchema, rawArgs);
   const org = await getOrCreateUserOrg(context.user!.id);
@@ -1499,7 +1499,7 @@ const uploadKnowledgeDocumentSchema = z.object({
   fileData: z.string().min(1), // base64 encoded file content
 });
 
-export const uploadKnowledgeDocument: UploadKnowledgeDocument<z.infer<typeof uploadKnowledgeDocumentSchema>, { id: string; title: string; status: string; chunkCount: number }> = async (rawArgs, context) => {
+export const uploadKnowledgeDocument: any = async (rawArgs: unknown, context: any) => {
   assertUserAndOrg(context);
   const { knowledgeBaseId, fileName, fileData } = ensureArgsSchemaOrThrowHttpError(uploadKnowledgeDocumentSchema, rawArgs);
   const org = await getOrCreateUserOrg(context.user!.id);
@@ -1650,7 +1650,7 @@ async function safeFetch(url: string, maxBytes: number = MAX_CRAWL_RESPONSE_BYTE
   }
 }
 
-export const crawlUrl: CrawlUrl<z.infer<typeof crawlUrlSchema>, { id: string; title: string; status: string; chunkCount: number }> = async (rawArgs, context) => {
+export const crawlUrl: any = async (rawArgs: unknown, context: any) => {
   assertUserAndOrg(context);
   const { knowledgeBaseId, url, isSitemap = false } = ensureArgsSchemaOrThrowHttpError(crawlUrlSchema, rawArgs);
   const org = await getOrCreateUserOrg(context.user!.id);
@@ -1727,7 +1727,7 @@ async function parseSitemapUrls(sitemapUrl: string): Promise<string[]> {
 
 const deleteKnowledgeDocumentSchema = z.object({ id: z.string() });
 
-export const deleteKnowledgeDocument: DeleteKnowledgeDocument<z.infer<typeof deleteKnowledgeDocumentSchema>, void> = async (rawArgs, context) => {
+export const deleteKnowledgeDocument: any = async (rawArgs: unknown, context: any) => {
   assertUserAndOrg(context);
   const { id } = ensureArgsSchemaOrThrowHttpError(deleteKnowledgeDocumentSchema, rawArgs);
   const doc = await prisma.knowledgeDocument.findUnique({ where: { id }, include: { knowledgeBase: true } });
@@ -1902,7 +1902,7 @@ const linkAgentToKnowledgeBaseSchema = z.object({
   knowledgeBaseId: z.string(),
 });
 
-export const linkAgentToKnowledgeBase: LinkAgentToKnowledgeBase<z.infer<typeof linkAgentToKnowledgeBaseSchema>, void> = async (rawArgs, context) => {
+export const linkAgentToKnowledgeBase: any = async (rawArgs: unknown, context: any) => {
   assertUserAndOrg(context);
   const { agentId, knowledgeBaseId } = ensureArgsSchemaOrThrowHttpError(linkAgentToKnowledgeBaseSchema, rawArgs);
   const org = await getOrCreateUserOrg(context.user!.id);
@@ -1922,7 +1922,7 @@ const unlinkAgentFromKnowledgeBaseSchema = z.object({
   knowledgeBaseId: z.string(),
 });
 
-export const unlinkAgentFromKnowledgeBase: UnlinkAgentFromKnowledgeBase<z.infer<typeof unlinkAgentFromKnowledgeBaseSchema>, void> = async (rawArgs, context) => {
+export const unlinkAgentFromKnowledgeBase: any = async (rawArgs: unknown, context: any) => {
   assertUserAndOrg(context);
   const { agentId, knowledgeBaseId } = ensureArgsSchemaOrThrowHttpError(unlinkAgentFromKnowledgeBaseSchema, rawArgs);
   const org = await getOrCreateUserOrg(context.user!.id);
@@ -2266,12 +2266,12 @@ async function logAuditEvent(
   action: string,
   metadata?: Record<string, unknown>,
   context?: { req?: { ip?: string; headers?: { [key: string]: string } } }
-) {
+ | any) {
   try {
     await prisma.auditLog.create({
       data: {
         action,
-        metadata: metadata ?? {},
+        metadata: metadata ?? {} as any,
         ipAddress: context?.req?.ip ?? null,
         userAgent: context?.req?.headers?.["user-agent"] ?? null,
         organizationId,
@@ -2463,4 +2463,5 @@ export const deleteTrigger: any = async (rawArgs: unknown, context: any) => {
   if (!trigger || trigger.website.organizationId !== org.id) throw new HttpError(404, "Trigger not found");
   await prisma.trigger.delete({ where: { id } });
 };
+
 

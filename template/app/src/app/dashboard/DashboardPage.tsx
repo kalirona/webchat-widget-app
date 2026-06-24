@@ -7,7 +7,7 @@ import { Bot, Globe, MessageSquare, Users, Plus, ArrowRight, Sparkles, Zap, Targ
 import { AppLayout } from "../layout/AppLayout";
 
 export function DashboardPage({ user }: { user: AuthUser }) {
-  const { data: stats, isLoading, error } = useQuery(getDashboardStats);
+  const { data: stats, isLoading, error } = useQuery(getDashboardStats) as any
   const { data: org } = useQuery(getOrganization);
 
   if (error) {
@@ -254,5 +254,6 @@ const StatCard = memo(function StatCard({
     </div>
   );
 });
+
 
 

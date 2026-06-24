@@ -3,7 +3,7 @@ import { useState } from "react";
 import { type AuthUser } from "wasp/auth";
 import { useAction } from "wasp/client/operations";
 import { createKnowledgeBase } from "wasp/client/operations";
-import { Link, useNavigate, routes } from "wasp/client/router";
+import { Link, routes } from "wasp/client/router";
 import { BookOpen, ArrowLeft, Loader2, AlertCircle } from "lucide-react";
 import { AppLayout } from "../layout/AppLayout";
 import { Button } from "../../client/components/ui/button";
@@ -22,7 +22,7 @@ export function NewKnowledgeBasePage({ user }: { user: AuthUser }) {
 
   const validateField = (fieldName: string, value: unknown) => {
     try {
-      const shape = knowledgeBaseFormSchema.shape as Record<string, { safeParse: (v: unknown) => { success: boolean; error?: { errors: { message: string }[] } } }>;
+      const shape = knowledgeBaseFormSchema.shape as Record<string, { safeParse: (v: unknown) => { success: boolean; error?: { issues: { message: string }[] } } }>;
       const fieldSchema = shape[fieldName];
       if (fieldSchema) {
         const result = fieldSchema.safeParse(value);
@@ -264,6 +264,7 @@ export function NewKnowledgeBasePage({ user }: { user: AuthUser }) {
     </AppLayout>
   );
 }
+
 
 
 

@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { type AuthUser } from "wasp/auth";
 import { useQuery, useAction } from "wasp/client/operations";
 import { getAgent, updateAgent } from "wasp/client/operations";
-import { Link, useNavigate, useParams, routes } from "wasp/client/router";
+import { Link, routes } from "wasp/client/router";
 import { Bot, ArrowLeft, Loader2, AlertCircle, Info, Trash2 } from "lucide-react";
 import { AppLayout } from "../layout/AppLayout";
 import { Button } from "../../client/components/ui/button";
@@ -57,7 +57,7 @@ export function EditAgentPage({ user }: { user: AuthUser }) {
 
   const validateField = (fieldName: string, value: unknown) => {
     try {
-      const shape = agentFormSchema.shape as Record<string, { safeParse: (v: unknown) => { success: boolean; error?: { errors: { message: string }[] } } }>;
+      const shape = agentFormSchema.shape as Record<string, { safeParse: (v: unknown) => { success: boolean; error?: { issues: { message: string }[] } } }>;
       const fieldSchema = shape[fieldName];
       if (fieldSchema) {
         const result = fieldSchema.safeParse(value);
@@ -463,6 +463,7 @@ export function EditAgentPage({ user }: { user: AuthUser }) {
     </AppLayout>
   );
 }
+
 
 
 

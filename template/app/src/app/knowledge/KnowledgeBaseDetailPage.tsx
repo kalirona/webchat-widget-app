@@ -12,7 +12,7 @@ import {
   unlinkAgentFromKnowledgeBase,
   createCustomTextEntry,
 } from "wasp/client/operations";
-import { Link, useParams, routes } from "wasp/client/router";
+import { Link, routes } from "wasp/client/router";
 import {
   BookOpen, ArrowLeft, Loader2, Upload, Globe, Trash2, FileText,
   Link2, Unlink, CheckCircle2, AlertCircle, Clock, Search,
@@ -693,5 +693,6 @@ export function KnowledgeBaseDetailPage({ user }: { user: AuthUser }) {
     </AppLayout>
   );
 }
+
 
 

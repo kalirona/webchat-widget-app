@@ -1,7 +1,6 @@
 import { Link as WaspRouterLink } from "wasp/client/router";
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
-import { Button } from "../../client/components/ui/button";
 
 const NAV_ITEMS = [
   { label: "Home", href: "/" },
@@ -11,7 +10,7 @@ const NAV_ITEMS = [
   { label: "Blog", href: "/blog" },
   { label: "Contact", href: "/contact" },
   { label: "Docs", href: "/docs/installation" },
-];
+] as const;
 
 export function PublicNavbar() {
   const [open, setOpen] = useState(false);
@@ -26,19 +25,15 @@ export function PublicNavbar() {
           {NAV_ITEMS.map((item) => (
             <WaspRouterLink
               key={item.href}
-              to={item.href}
+              to={item.href as any}
               className="text-muted-foreground hover:text-foreground text-sm font-medium transition-colors"
             >
               {item.label}
             </WaspRouterLink>
           ))}
           <div className="ml-4 flex items-center gap-3">
-            <Button variant="ghost" size="sm" asChild>
-              <WaspRouterLink to={"/login"}>Log in</WaspRouterLink>
-            </Button>
-            <Button size="sm" asChild>
-              <WaspRouterLink to={"/signup"}>Get Started</WaspRouterLink>
-            </Button>
+            <WaspRouterLink to={"/login" as any} className="text-muted-foreground hover:text-foreground text-sm font-medium transition-colors">Log in</WaspRouterLink>
+            <WaspRouterLink to={"/signup" as any} className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors">Get Started</WaspRouterLink>
           </div>
         </div>
         <button onClick={() => setOpen(!open)} className="md:hidden">
@@ -51,7 +46,7 @@ export function PublicNavbar() {
             {NAV_ITEMS.map((item) => (
               <WaspRouterLink
                 key={item.href}
-                to={item.href}
+                to={item.href as any}
                 onClick={() => setOpen(false)}
                 className="text-muted-foreground hover:text-foreground block py-2 text-sm font-medium transition-colors"
               >
@@ -59,8 +54,8 @@ export function PublicNavbar() {
               </WaspRouterLink>
             ))}
             <hr className="border-border/50 my-3" />
-            <WaspRouterLink to={"/login"} onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground block py-2 text-sm font-medium transition-colors">Log in</WaspRouterLink>
-            <WaspRouterLink to={"/signup"} onClick={() => setOpen(false)} className="text-primary hover:text-primary/80 block py-2 text-sm font-medium transition-colors">Get Started →</WaspRouterLink>
+            <WaspRouterLink to={"/login" as any} onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground block py-2 text-sm font-medium transition-colors">Log in</WaspRouterLink>
+            <WaspRouterLink to={"/signup" as any} onClick={() => setOpen(false)} className="text-primary hover:text-primary/80 block py-2 text-sm font-medium transition-colors">Get Started →</WaspRouterLink>
           </div>
         </div>
       )}

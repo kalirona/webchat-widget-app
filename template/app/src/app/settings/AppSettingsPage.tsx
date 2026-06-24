@@ -52,12 +52,12 @@ const PROVIDER_MODELS: Record<string, string[]> = {
 type Tab = "organization" | "team" | "invitations" | "audit";
 
 export function AppSettingsPage({ user }: { user: AuthUser }) {
-  const { data: org, isLoading: orgLoading } = useQuery(getOrganization);
-  const { data: members, isLoading: membersLoading } = useQuery(getOrganizationMembers);
-  const { data: aiSettings, isLoading: aiLoading } = useQuery(getAiSettings);
-  const { data: aiUsage, isLoading: usageLoading } = useQuery(getAiUsage);
-  const { data: invitations, isLoading: invitationsLoading } = useQuery(getInvitations);
-  const { data: auditData, isLoading: auditLoading } = useQuery(getAuditLogs, { limit: 20 });
+  const { data: org, isLoading: orgLoading } = useQuery(getOrganization) as any
+  const { data: members, isLoading: membersLoading } = useQuery(getOrganizationMembers) as any
+  const { data: aiSettings, isLoading: aiLoading } = useQuery(getAiSettings) as any
+  const { data: aiUsage, isLoading: usageLoading } = useQuery(getAiUsage) as any
+  const { data: invitations, isLoading: invitationsLoading } = useQuery(getInvitations) as any
+  const { data: auditData, isLoading: auditLoading } = useQuery(getAuditLogs, { limit: 20 }) as any
 
   const [activeTab, setActiveTab] = useState<Tab>("organization");
 
@@ -130,7 +130,7 @@ export function AppSettingsPage({ user }: { user: AuthUser }) {
     if (sanitized.length >= 3) {
       setCheckingSlug(true);
       try {
-        const result = await verifyOrganizationSlug({ slug: sanitized });
+        const result = await verifyOrganizationSlug({ slug: sanitized }) as any;
         setSlugAvailable(result.available);
       } catch {
         setSlugAvailable(null);
@@ -878,3 +878,4 @@ export function AppSettingsPage({ user }: { user: AuthUser }) {
     </AppLayout>
   );
 }
+

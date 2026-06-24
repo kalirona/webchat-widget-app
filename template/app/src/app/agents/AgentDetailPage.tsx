@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { type AuthUser } from "wasp/auth";
 import { useQuery } from "wasp/client/operations";
 import { getAgent, getAgentStats } from "wasp/client/operations";
-import { Link, useParams, routes } from "wasp/client/router";
+import { Link, routes } from "wasp/client/router";
 import {
   Bot, ArrowLeft, Loader2, MessageSquare, Users, MessageCircle,
   Pencil, Play, Pause, Globe, Send, Sparkles,
@@ -307,6 +307,7 @@ export function AgentDetailPage({ user }: { user: AuthUser }) {
     </AppLayout>
   );
 }
+
 
 
 

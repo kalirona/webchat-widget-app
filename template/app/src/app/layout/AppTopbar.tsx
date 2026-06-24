@@ -18,7 +18,7 @@ export function AppTopbar(props: {
   user: AuthUser;
 }) {
   const [open, setOpen] = useState(false);
-  const { data: org } = useQuery(getOrganization);
+  const { data: org } = useQuery(getOrganization) as any
 
   return (
     <header className="bg-background/80 sticky top-0 z-10 flex w-full border-b border-border/50 backdrop-blur-xl">
@@ -102,3 +102,4 @@ export function AppTopbar(props: {
     </header>
   );
 }
+

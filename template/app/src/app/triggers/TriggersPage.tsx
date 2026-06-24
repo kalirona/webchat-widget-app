@@ -18,7 +18,7 @@ export function TriggersPage({ user }: { user: AuthUser }) {
   const { websiteId } = useParams<{ websiteId: string }>();
   const navigate = useNavigate();
   const { data: website } = useQuery(getWebsite, { id: websiteId! });
-  const { data: triggers, isLoading, refetch } = useQuery(getTriggers, { websiteId: websiteId! });
+  const { data: triggers, isLoading, refetch } = useQuery(getTriggers, { websiteId: websiteId! }) as any
   const createAction = useAction(createTrigger);
   const updateAction = useAction(updateTrigger);
   const deleteAction = useAction(deleteTrigger);
@@ -260,3 +260,4 @@ export function TriggersPage({ user }: { user: AuthUser }) {
     </AppLayout>
   );
 }
+

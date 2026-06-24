@@ -3,7 +3,7 @@ import { useState } from "react";
 import { type AuthUser } from "wasp/auth";
 import { useAction } from "wasp/client/operations";
 import { createAgent } from "wasp/client/operations";
-import { Link, useNavigate, routes } from "wasp/client/router";
+import { Link, routes } from "wasp/client/router";
 import { Bot, ArrowLeft, Loader2, AlertCircle, Info } from "lucide-react";
 import { AppLayout } from "../layout/AppLayout";
 import { Button } from "../../client/components/ui/button";
@@ -313,6 +313,7 @@ export function NewAgentPage({ user }: { user: AuthUser }) {
     </AppLayout>
   );
 }
+
 
 
 

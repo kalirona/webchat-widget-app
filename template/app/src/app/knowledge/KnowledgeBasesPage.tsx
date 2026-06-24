@@ -3,7 +3,7 @@ import { type AuthUser } from "wasp/auth";
 import { useQuery, useAction } from "wasp/client/operations";
 import { getKnowledgeBases, deleteKnowledgeBase } from "wasp/client/operations";
 import { Link, routes } from "wasp/client/router";
-import { BookOpen, Plus, Trash2, Loader2, FileText, SplitSquareVertical } from "lucide-react";
+import { BookOpen, Plus, Trash2, Loader2, FileText, SplitSquareVertical, AlertCircle } from "lucide-react";
 import { AppLayout } from "../layout/AppLayout";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,

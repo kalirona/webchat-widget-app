@@ -19,7 +19,7 @@ export function EditWebsitePage({ user }: { user: AuthUser }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const { data: website, isLoading } = useQuery(getWebsite, { id: id! });
-  const { data: agents } = useQuery(getAgents);
+  const { data: agents } = useQuery(getAgents) as any;
 
   const [form, setForm] = useState<WebsiteFormData>({
     name: "",
@@ -94,12 +94,12 @@ export function EditWebsitePage({ user }: { user: AuthUser }) {
         id: id!,
         url: result.data.url,
         name: result.data.name,
-        logoUrl: result.data.logoUrl || null,
-        agentId: result.data.agentId || null,
+        logoUrl: result.data.logoUrl || undefined,
+        agentId: result.data.agentId || undefined,
         widgetColor: result.data.widgetColor,
         widgetPosition: result.data.widgetPosition,
         widgetTitle: result.data.widgetTitle || "AI Assistant",
-        widgetAvatarUrl: result.data.widgetAvatarUrl || null,
+        widgetAvatarUrl: result.data.widgetAvatarUrl || undefined,
         widgetWelcomeMessage: result.data.widgetWelcomeMessage || "",
         allowedDomains: result.data.allowedDomains
           ? result.data.allowedDomains.split("\n").map((d) => d.trim()).filter(Boolean)
@@ -492,7 +492,7 @@ export function EditWebsitePage({ user }: { user: AuthUser }) {
 
               {/* Proactive Triggers */}
               <Link
-                to={`/app/websites/${id}/triggers`}
+                to={`/app/websites/${id}/triggers` as any}
                 className="bg-card hover:bg-accent/50 rounded-2xl border border-border/50 p-6 shadow-sm transition-colors block"
               >
                 <div className="flex items-center gap-3">

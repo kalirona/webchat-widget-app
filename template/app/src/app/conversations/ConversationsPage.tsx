@@ -319,7 +319,7 @@ export function ConversationsPage({ user }: { user: AuthUser }) {
     search: debouncedSearch || undefined,
     status: statusFilter !== "all" ? statusFilter : undefined,
     pageSize: 50,
-  }, { enabled: false });
+  }, { enabled: false }) as any
 
   const convs = data?.conversations || [];
   const selectedConv = params?.id ? convs.find((c: any) => c.id === params.id) : null;
@@ -461,5 +461,6 @@ export function ConversationsPage({ user }: { user: AuthUser }) {
     </AppLayout>
   );
 }
+
 
 

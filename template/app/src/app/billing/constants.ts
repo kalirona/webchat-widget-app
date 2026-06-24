@@ -37,16 +37,16 @@ export type PlanId = keyof typeof PLAN_LIMITS;
 
 export function getPlanLimits(plan: string | null | undefined): typeof PLAN_LIMITS.free {
   if (plan && plan in PLAN_LIMITS) {
-    return PLAN_LIMITS[plan as PlanId];
+    return PLAN_LIMITS[plan as PlanId] as any;
   }
-  return PLAN_LIMITS.free;
+  return PLAN_LIMITS.free as any;
 }
 
 export function getAllowedModels(plan: string | null | undefined): string[] | null {
   if (plan && plan in PLAN_LIMITS) {
-    return PLAN_LIMITS[plan as PlanId].models;
+    return [...PLAN_LIMITS[plan as PlanId].models] as string[];
   }
-  return PLAN_LIMITS.free.models;
+  return [...PLAN_LIMITS.free.models] as string[];
 }
 
 // Warn when usage hits 80% of limit

@@ -14,7 +14,7 @@ import {
 
 export function NewWebsitePage({ user }: { user: AuthUser }) {
   const navigate = useNavigate();
-  const { data: agents } = useQuery(getAgents);
+  const { data: agents } = useQuery(getAgents) as any;
   const [form, setForm] = useState<WebsiteFormData>(websiteFormDefaults);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);

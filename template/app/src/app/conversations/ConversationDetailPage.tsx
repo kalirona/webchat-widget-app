@@ -23,7 +23,8 @@ function StatusBadge({ status }: { status: string }) {
 
 export function ConversationDetailPage({ user }: { user: AuthUser }) {
   const { id } = useParams<{ id: string }>();
-  const { data: detail, isLoading, error, refetch } = useQuery(getConversationDetail, { id: id! });
+  const { data: convDetail, isLoading, error, refetch } = useQuery(getConversationDetail, { id: id! });
+  const convDetail = detail as any;
   const resolveAction = useAction(resolveConversation);
   const assignAction = useAction(assignConversation);
   const escalateAction = useAction(escalateConversation);
@@ -145,21 +146,21 @@ export function ConversationDetailPage({ user }: { user: AuthUser }) {
                 <div className="flex items-center justify-between gap-2 border-b border-border/50 px-6 py-3">
                   <div>
                     <h2 className="text-base font-semibold">
-                      {detail.lead?.name || detail.visitor?.name || "Anonymous Visitor"}
+                      {convDetail.lead?.name || convDetail.visitor?.name || "Anonymous Visitor"}
                     </h2>
                     <p className="text-muted-foreground text-xs">
-                      {detail.lead?.email || detail.visitor?.email || "No email"}
+                      {convDetail.lead?.email || convDetail.visitor?.email || "No email"}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    {detail.status !== "resolved" && (
+                    {convDetail.status !== "resolved" && (
                       <>
-                        {detail.status !== "human" && (
+                        {convDetail.status !== "human" && (
                           <button onClick={handleAssignSelf} className="hover:bg-muted flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors">
                             <UserPlus className="h-3.5 w-3.5" /> Assign me
                           </button>
                         )}
-                        {detail.status !== "escalated" && (
+                        {convDetail.status !== "escalated" && (
                           <button onClick={handleEscalate} className="hover:bg-red-50 flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-red-600 transition-colors dark:hover:bg-red-900/20">
                             <AlertTriangle className="h-3.5 w-3.5" /> Escalate
                           </button>
@@ -173,7 +174,7 @@ export function ConversationDetailPage({ user }: { user: AuthUser }) {
                 </div>
                 <div className="flex-1 overflow-y-auto px-6 py-4">
                   <div className="w-full max-w-3xl mx-auto space-y-4">
-                    {detail.messages?.length === 0 ? (
+                    {convDetail.messages?.length === 0 ? (
                       <div className="flex items-center justify-center py-20">
                         <div className="text-center">
                           <MessageSquare className="text-muted-foreground mx-auto mb-3 h-12 w-12" />
@@ -181,7 +182,7 @@ export function ConversationDetailPage({ user }: { user: AuthUser }) {
                         </div>
                       </div>
                     ) : (
-                      detail.messages?.map((msg: any) => (
+                      convDetail.messages?.map((msg: any) => (
                         <div key={msg.id} className={`flex gap-3 ${msg.role === "assistant" ? "" : "flex-row-reverse"}`}>
                           <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
                             msg.role === "assistant" ? "bg-primary/10 text-primary" : msg.role === "system" ? "bg-amber-100 text-amber-700" : "bg-muted text-foreground"
@@ -232,82 +233,82 @@ export function ConversationDetailPage({ user }: { user: AuthUser }) {
             <div className="w-72 shrink-0 border-l border-border/50 p-5 overflow-y-auto">
               <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Visitor Info</h3>
               <div className="space-y-5">
-                {detail.visitor && (
+                {convDetail.visitor && (
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 text-sm">
                       <User className="text-muted-foreground h-4 w-4" />
-                      <span>{detail.visitor.name || "Unknown"}</span>
+                      <span>{convDetail.visitor.name || "Unknown"}</span>
                     </div>
-                    {detail.visitor.email && (
+                    {convDetail.visitor.email && (
                       <div className="flex items-center gap-2 text-sm">
                         <Mail className="text-muted-foreground h-4 w-4" />
-                        <a href={`mailto:${detail.visitor.email}`} className="hover:text-primary truncate">{detail.visitor.email}</a>
+                        <a href={`mailto:${convDetail.visitor.email}`} className="hover:text-primary truncate">{convDetail.visitor.email}</a>
                       </div>
                     )}
-                    {detail.visitor.pageUrl && (
+                    {convDetail.visitor.pageUrl && (
                       <div className="flex items-center gap-2 text-sm">
                         <Globe className="text-muted-foreground h-4 w-4" />
-                        <span className="truncate text-xs">{detail.visitor.pageUrl}</span>
+                        <span className="truncate text-xs">{convDetail.visitor.pageUrl}</span>
                       </div>
                     )}
-                    {detail.visitor.userAgent && (
+                    {convDetail.visitor.userAgent && (
                       <div className="flex items-start gap-2 text-sm">
                         <Monitor className="text-muted-foreground mt-0.5 h-4 w-4 shrink-0" />
-                        <span className="text-muted-foreground text-xs leading-relaxed">{detail.visitor.userAgent}</span>
+                        <span className="text-muted-foreground text-xs leading-relaxed">{convDetail.visitor.userAgent}</span>
                       </div>
                     )}
                   </div>
                 )}
 
-                {detail.lead && (
+                {convDetail.lead && (
                   <div>
                     <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Lead</h4>
                     <div className="space-y-2">
-                      <p className="text-sm">{detail.lead.name || "No name"}</p>
-                      {detail.lead.email && (
+                      <p className="text-sm">{convDetail.lead.name || "No name"}</p>
+                      {convDetail.lead.email && (
                         <div className="flex items-center gap-2 text-sm">
                           <Mail className="text-muted-foreground h-4 w-4" />
-                          <a href={`mailto:${detail.lead.email}`} className="hover:text-primary truncate">{detail.lead.email}</a>
+                          <a href={`mailto:${convDetail.lead.email}`} className="hover:text-primary truncate">{convDetail.lead.email}</a>
                         </div>
                       )}
-                      {detail.lead.phone && (
+                      {convDetail.lead.phone && (
                         <div className="flex items-center gap-2 text-sm">
                           <Phone className="text-muted-foreground h-4 w-4" />
-                          <span>{detail.lead.phone}</span>
+                          <span>{convDetail.lead.phone}</span>
                         </div>
                       )}
-                      <StatusBadge status={detail.lead.status} />
+                      <StatusBadge status={convDetail.lead.status} />
                     </div>
                   </div>
                 )}
 
-                {detail.website && (
+                {convDetail.website && (
                   <div>
                     <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Source</h4>
-                    <p className="text-sm">{detail.website.name}</p>
-                    <p className="text-muted-foreground truncate text-xs">{detail.website.url}</p>
+                    <p className="text-sm">{convDetail.website.name}</p>
+                    <p className="text-muted-foreground truncate text-xs">{convDetail.website.url}</p>
                   </div>
                 )}
 
-                {detail.agent && (
+                {convDetail.agent && (
                   <div>
                     <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">AI Agent</h4>
-                    <p className="text-sm">{detail.agent.name}</p>
+                    <p className="text-sm">{convDetail.agent.name}</p>
                   </div>
                 )}
 
                 <div>
                   <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Timeline</h4>
-                  <p className="text-muted-foreground text-xs">Created: {new Date(detail.createdAt).toLocaleString()}</p>
-                  {detail.lastMessageAt && <p className="text-muted-foreground text-xs">Last activity: {new Date(detail.lastMessageAt).toLocaleString()}</p>}
-                  {detail.resolvedAt && <p className="text-muted-foreground text-xs">Resolved: {new Date(detail.resolvedAt).toLocaleString()}</p>}
+                  <p className="text-muted-foreground text-xs">Created: {new Date(convDetail.createdAt).toLocaleString()}</p>
+                  {convDetail.lastMessageAt && <p className="text-muted-foreground text-xs">Last activity: {new Date(convDetail.lastMessageAt).toLocaleString()}</p>}
+                  {convDetail.resolvedAt && <p className="text-muted-foreground text-xs">Resolved: {new Date(convDetail.resolvedAt).toLocaleString()}</p>}
                 </div>
 
-                {detail.visitorHistory?.length > 0 && (
+                {convDetail.visitorHistory?.length > 0 && (
                   <div>
                     <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Previous Conversations</h4>
                     <div className="space-y-2">
-                      {detail.visitorHistory.map((vc: any) => (
+                      {convDetail.visitorHistory.map((vc: any) => (
                         <Link
                           key={vc.id}
                           to={routes.ConversationDetailRoute.to.replace(":id", vc.id) as any}
@@ -336,5 +337,6 @@ export function ConversationDetailPage({ user }: { user: AuthUser }) {
     </AppLayout>
   );
 }
+
 
 
