@@ -25,6 +25,7 @@ RUN apt-get update && apt-get install -y openssl ca-certificates && rm -rf /var/
 
 WORKDIR /app
 COPY --from=builder /app/.wasp/out ./
+RUN find . -type f -name "*.js" | head -60; echo === package.json ===; cat server/package.json 2>/dev/null || echo "no server/package.json"
 RUN (cd server && npm ci --production) 2>/dev/null; true
 RUN npx prisma generate --schema=db/schema.prisma 2>/dev/null; true
 
@@ -32,5 +33,4 @@ EXPOSE 3001
 
 ENV NODE_ENV=production
 
-# wasp v0.24 bundles server into server/bundle/server.js
-CMD ["sh", "-c", "cd server && npx prisma migrate deploy 2>/dev/null; node bundle/server.js"]
+CMD ["sh", "-c", "cd server && npx prisma migrate deploy 2>/dev/null; node server.js"]
