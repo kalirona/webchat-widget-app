@@ -133,7 +133,7 @@ export function ConversationDetailPage({ user }: { user: AuthUser }) {
         <div className="flex items-center justify-center py-20">
           <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
         </div>
-      ) : !detail ? (
+      ) : !convDetail ? (
         <div className="flex flex-col items-center justify-center py-20">
           <MessageSquare className="text-muted-foreground mb-4 h-16 w-16" />
           <h2 className="text-xl font-semibold">Conversation not found</h2>
