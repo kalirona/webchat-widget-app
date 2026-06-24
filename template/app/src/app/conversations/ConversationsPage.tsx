@@ -163,9 +163,9 @@ function ConversationPanel({ conversation, user, onClose }: { conversation: any;
                       <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                       <p className={`mt-1 text-xs ${msg.role === "assistant" ? "text-muted-foreground" : "text-primary-foreground/70"}`}>
                         {new Date(msg.createdAt).toLocaleString()}
-                        {msg.tokens && <span> · {msg.tokens} tokens</span>}
-                        {msg.cost && <span> · ${msg.cost.toFixed(4)}</span>}
-                        {msg.source === "dashboard" && <span> · <span className="text-green-600">Agent reply</span></span>}
+                        {msg.tokens && <span> -+ {msg.tokens} tokens</span>}
+                        {msg.cost && <span> -+ ${msg.cost.toFixed(4)}</span>}
+                        {msg.source === "dashboard" && <span> -+ <span className="text-green-600">Agent reply</span></span>}
                       </p>
                     </div>
                   </div>
@@ -284,8 +284,8 @@ function ConversationPanel({ conversation, user, onClose }: { conversation: any;
                   {conversation.visitorHistory.map((vc: any) => (
                     <p key={vc.id} className="hover:bg-muted/50 rounded-lg border border-border/50 px-3 py-1.5 text-xs">
                       <span className="font-medium">{new Date(vc.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</span>
-                      <span className="text-muted-foreground"> · {vc.messageCount} msg{vc.messageCount !== 1 ? "s" : ""}</span>
-                      {vc.status && <span className="text-muted-foreground"> · {vc.status}</span>}
+                      <span className="text-muted-foreground"> -+ {vc.messageCount} msg{vc.messageCount !== 1 ? "s" : ""}</span>
+                      {vc.status && <span className="text-muted-foreground"> -+ {vc.status}</span>}
                     </p>
                   ))}
                 </div>
@@ -313,7 +313,7 @@ export function ConversationsPage({ user }: { user: AuthUser }) {
     search: debouncedSearch || undefined,
     status: statusFilter !== "all" ? statusFilter : undefined,
     pageSize: 50,
-  }); as any;
+  }) as Record<string, any>;
 
   const { data: conversationDetail, refetch: refetchDetail } = useQuery(getConversationsInbox, {
     search: debouncedSearch || undefined,
@@ -461,7 +461,6 @@ export function ConversationsPage({ user }: { user: AuthUser }) {
     </AppLayout>
   );
 }
-
 
 
 

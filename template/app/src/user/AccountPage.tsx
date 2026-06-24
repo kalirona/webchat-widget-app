@@ -154,7 +154,7 @@ function formatSubscriptionStatusMessage(
 function prettyPrintEndOfBillingPeriod(datePaid: Date) {
   const lastDayOfNextMonth = new Date(datePaid);
   lastDayOfNextMonth.setMonth(lastDayOfNextMonth.getMonth() + 2, 0);
-  // Clamped so e.g., Jan 31 + 1 month → Feb 28, not until March 3.
+  // Clamped so e.g., Jan 31 + 1 month G�� Feb 28, not until March 3.
   const clampedDayOfMonth = Math.min(
     datePaid.getDate(),
     lastDayOfNextMonth.getDate(),
@@ -169,7 +169,7 @@ function prettyPrintEndOfBillingPeriod(datePaid: Date) {
 
 function CustomerPortalButton() {
   const { data: customerPortalUrl, isLoading: isCustomerPortalUrlLoading } =
-    useQuery(getCustomerPortalUrl as Record<string, any> as Record<string, any>;
+    useQuery(getCustomerPortalUrl) as Record<string, any>;
 
   if (!customerPortalUrl) {
     return null;
@@ -203,4 +203,3 @@ function BuyMoreButton({
     </WaspRouterLink>
   );
 }
-

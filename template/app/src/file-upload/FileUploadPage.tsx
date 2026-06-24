@@ -41,13 +41,13 @@ export function FileUploadPage() {
     // We disable automatic refetching because otherwise files would be refetched after `createFile` is called and the S3 URL is returned,
     // which happens before the file is actually fully uploaded. Instead, we manually (re)fetch on mount and after the upload is complete.
     enabled: false,
-  } as Record<string, any> as any;
+  }) as any;
   const { isLoading: isDownloadUrlLoading, refetch: refetchDownloadUrl } =
     useQuery(
       getDownloadFileSignedURL,
       { s3Key: fileKeyForS3 },
       { enabled: false },
-     as Record<string, any> as Record<string, any>;
+    );
 
   useEffect(() => {
     allUserFiles.refetch();
@@ -179,7 +179,7 @@ export function FileUploadPage() {
           <p className="text-muted-foreground mx-auto mt-6 max-w-2xl text-center text-lg leading-8">
             This is an example file upload page using AWS S3. Maybe your app
             needs this. Maybe it doesn't. But a lot of people asked for this
-            feature, so here you go ü§ù
+            feature, so here you go =ÉÒ•
           </p>
           <Card className="my-8">
             <CardContent className="mx-auto my-10 space-y-10 px-4 py-8 sm:max-w-lg">
@@ -317,5 +317,4 @@ export function FileUploadPage() {
     </>
   );
 }
-
 

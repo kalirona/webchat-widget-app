@@ -131,7 +131,7 @@ function NewTaskForm({
   const [isPlanGenerating, setIsPlanGenerating] = useState<boolean>(false);
 
   const { data: tasks, isLoading: isTasksLoading } =
-    useQuery(getAllTasksByUser as Record<string, any> as Record<string, any>;
+    useQuery(getAllTasksByUser) as Record<string, any>;
 
   const handleSubmit = async () => {
     try {
@@ -160,7 +160,7 @@ function NewTaskForm({
           : undefined;
       if (statusCode === 402) {
         toast({
-          title: "⚠️ You are out of credits!",
+          title: "G��n+� You are out of credits!",
           style: {
             minWidth: "400px",
           },
@@ -492,4 +492,3 @@ function TaskCardItem({ description, time }: TaskItem) {
     </li>
   );
 }
-
