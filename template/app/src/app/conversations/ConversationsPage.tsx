@@ -313,7 +313,7 @@ export function ConversationsPage({ user }: { user: AuthUser }) {
     search: debouncedSearch || undefined,
     status: statusFilter !== "all" ? statusFilter : undefined,
     pageSize: 50,
-  });
+  }); as any;
 
   const { data: conversationDetail, refetch: refetchDetail } = useQuery(getConversationsInbox, {
     search: debouncedSearch || undefined,
@@ -461,6 +461,9 @@ export function ConversationsPage({ user }: { user: AuthUser }) {
     </AppLayout>
   );
 }
+
+
+
 
 
 

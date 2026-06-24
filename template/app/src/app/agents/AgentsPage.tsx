@@ -32,7 +32,7 @@ export function AgentsPage({ user }: { user: AuthUser }) {
     pageSize: PAGE_SIZE,
   };
 
-  const { data, isLoading, error } = useQuery(getAgents, queryKey);
+  const { data, isLoading, error } = useQuery(getAgents, queryKey) as any;
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -297,6 +297,9 @@ export function AgentsPage({ user }: { user: AuthUser }) {
     </AppLayout>
   );
 }
+
+
+
 
 
 
