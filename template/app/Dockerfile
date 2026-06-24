@@ -19,7 +19,7 @@ COPY . .
 RUN wasp install
 RUN wasp build
 # wasp v0.24 does not pre-bundle the server; run bundle to create server/bundle/server.js
-RUN cd .wasp/out/server && npm run bundle
+RUN cd .wasp/out/server && npm run bundle 2>&1 || (echo "=== Bundle failed ===" && cat /app/.wasp/out/server/tsconfig.json 2>/dev/null && ls /app/.wasp/out/server/ 2>/dev/null && exit 1)
 
 FROM node:24-bookworm-slim
 
