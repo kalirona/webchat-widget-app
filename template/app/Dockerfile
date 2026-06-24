@@ -2,11 +2,11 @@ FROM node:24-bookworm-slim AS builder
 
 RUN apt-get update && apt-get install -y openssl libssl-dev ca-certificates curl
 
-# Install Wasp CLI v0.23.0
-RUN curl -sSL "https://github.com/wasp-lang/wasp/releases/download/v0.23.0/wasp-linux-x86_64.tar.gz" -o /tmp/wasp.tar.gz && \
+# Install Wasp CLI v0.24.0
+RUN curl -sSL "https://github.com/wasp-lang/wasp/releases/download/v0.24.0/wasp-linux-x86_64.tar.gz" -o /tmp/wasp.tar.gz && \
     cd /tmp && tar -xzf wasp.tar.gz && \
-    mkdir -p /github/home/.cabal/share/x86_64-linux-ghc-9.6.7/waspc-0.23.0 && \
-    cp -r data/* /github/home/.cabal/share/x86_64-linux-ghc-9.6.7/waspc-0.23.0/ && \
+    mkdir -p /github/home/.cabal/share/x86_64-linux-ghc-9.6.7/waspc-0.24.0 && \
+    cp -r data/* /github/home/.cabal/share/x86_64-linux-ghc-9.6.7/waspc-0.24.0/ && \
     cp wasp-bin /usr/local/bin/wasp && chmod +x /usr/local/bin/wasp && \
     rm -rf /tmp/wasp.tar.gz /tmp/wasp-bin /tmp/data && \
     wasp version
