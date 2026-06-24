@@ -17,7 +17,9 @@ RUN npm install
 
 COPY . .
 RUN wasp install
-RUN wasp build
+ENV NPM_CONFIG_AUDIT=false
+ENV NPM_CONFIG_FUND=false
+RUN --mount=type=cache,target=/root/.npm wasp build
 
 FROM node:24-bookworm-slim
 
