@@ -35,4 +35,4 @@ EXPOSE 3001
 
 ENV NODE_ENV=production
 
-CMD ["sh", "-c", "cd server && npx prisma migrate deploy --schema=../db/schema.prisma 2>/dev/null; node --enable-source-maps -r dotenv/config bundle/server.js"]
+CMD ["sh", "-c", "cd server && npx prisma migrate deploy --schema=../db/schema.prisma 2>/dev/null; node --enable-source-maps bundle/server.js"]
